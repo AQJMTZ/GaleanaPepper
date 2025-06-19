@@ -6,6 +6,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-url = os.getenv("SUPABASE_URL")
+url = os.getenv("http://galeana.papper_base")
 key = os.getenv("SUPABASE_KEY")
 supabase = create_client(url, key)
