@@ -1,4 +1,4 @@
-// Tremor Raw chartColors [v0.1.0]
+// Tremor chartColors [v0.1.0]
 
 export type ColorUtility = "bg" | "stroke" | "fill" | "text"
 
@@ -33,6 +33,12 @@ export const chartColors = {
     fill: "fill-gray-500",
     text: "text-gray-500",
   },
+  lightGray: {
+    bg: "bg-gray-400 dark:bg-gray-600",
+    stroke: "stroke-gray-400 dark:stroke-gray-600",
+    fill: "fill-gray-400 dark:fill-gray-600",
+    text: "text-gray-400 dark:text-gray-600",
+  },
   cyan: {
     bg: "bg-cyan-500",
     stroke: "stroke-cyan-500",
@@ -56,6 +62,12 @@ export const chartColors = {
     stroke: "stroke-fuchsia-500",
     fill: "fill-fuchsia-500",
     text: "text-fuchsia-500",
+  },
+  red: {
+    bg: "bg-red-500",
+    stroke: "stroke-red-500",
+    fill: "fill-red-500",
+    text: "text-red-500",
   },
 } as const satisfies {
   [color: string]: {
@@ -93,24 +105,26 @@ export const getColorClassName = (
   return chartColors[color]?.[type] ?? fallbackColor[type]
 }
 
-// Tremor Raw getYAxisDomain [v0.0.0]
+// Tremor getYAxisDomain [v0.0.0]
 
 export const getYAxisDomain = (
   autoMinValue: boolean,
   minValue: number | undefined,
   maxValue: number | undefined,
 ) => {
-  const minDomain = autoMinValue ? "auto" : minValue ?? 0
+  const minDomain = autoMinValue ? "auto" : (minValue ?? 0)
   const maxDomain = maxValue ?? "auto"
   return [minDomain, maxDomain]
 }
 
-// Tremor Raw hasOnlyOneValueForKey [v0.1.0]
+// Tremor hasOnlyOneValueForKey [v0.1.0]
 
 export function hasOnlyOneValueForKey(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   array: any[],
   keyToCheck: string,
 ): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const val: any[] = []
 
   for (const obj of array) {
