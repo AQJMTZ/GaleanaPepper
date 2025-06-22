@@ -26,11 +26,11 @@ export const metadata: Metadata = {
   keywords: ["Dashboard", "Data Visualization", "Software"],
   authors: [
     {
-      name: "yourname",
+      name: "Alejandro Quintana",
       url: "",
     },
   ],
-  creator: "yourname",
+  creator: "Alejandro Quintana",
   openGraph: {
     type: "website",
     locale: "en_US",

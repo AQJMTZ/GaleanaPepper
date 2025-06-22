@@ -29,10 +29,10 @@ export default function Monitoring() {
             <SelectValue placeholder="Assigned to..." />
           </SelectTrigger>
           <SelectContent align="end">
-            <SelectItem value="30-days">Last 30 days</SelectItem>
-            <SelectItem value="90-days">Last 90 days</SelectItem>
-            <SelectItem value="180-days">Last 180 days</SelectItem>
-            <SelectItem value="365-days">Last 365 days</SelectItem>
+            <SelectItem value="30-days">Últimos 30 días</SelectItem>
+            <SelectItem value="90-days">Últimos 120 días</SelectItem>
+            <SelectItem value="180-days">Últimos 180 días</SelectItem>
+            <SelectItem value="365-days">Últimos 365 días</SelectItem>
           </SelectContent>
         </Select>
         <Button
@@ -43,17 +43,17 @@ export default function Monitoring() {
             className="-ml-0.5 size-4 shrink-0 text-gray-400 dark:text-gray-600"
             aria-hidden="true"
           />
-          Report Filters
+          Filtrar Reportes
         </Button>
       </div>
       <dl className="grid grid-cols-1 gap-x-14 gap-y-10 border-t border-gray-200 p-6 md:grid-cols-2 dark:border-gray-800">
         <div className="flex flex-col justify-between p-0">
           <div>
             <dt className="text-sm font-semibold text-gray-900 dark:text-gray-50">
-              Inherent risk
+              Tiempo de espera en linea
             </dt>
             <dd className="mt-0.5 text-sm/6 text-gray-500 dark:text-gray-500">
-              Risk scenarios over time grouped by risk level
+              El tiempo de espera antes de entrar a ser procesado.
             </dd>
           </div>
           <BarChart
@@ -82,10 +82,10 @@ export default function Monitoring() {
         <div className="flex flex-col justify-between">
           <div>
             <dt className="text-sm font-semibold text-gray-900 dark:text-gray-50">
-              Quote-to-Deal ratio
+              Tiempo de procesamiento
             </dt>
             <dd className="mt-0.5 text-sm/6 text-gray-500 dark:text-gray-500">
-              Number of quotes compared to total deal size for given month
+              El tiempo que estuvo en el area de procesamiento.
             </dd>
           </div>
           <ComboChart
@@ -126,10 +126,10 @@ export default function Monitoring() {
         <div className="flex flex-col justify-between">
           <div>
             <dt className="text-sm font-semibold text-gray-900 dark:text-gray-50">
-              ESG impact
+              Toneladas procesadas
             </dt>
             <dd className="mt-0.5 text-sm/6 text-gray-500 dark:text-gray-500">
-              Evaluation of addressed ESG criteria in biddings over time
+              La canrtidad de toneladas que se procesaron en el periodo
             </dd>
           </div>
           <BarChart
@@ -159,10 +159,10 @@ export default function Monitoring() {
         <div className="flex flex-col justify-between">
           <div>
             <dt className="text-sm font-semibold text-gray-900 dark:text-gray-50">
-              Bidder density
+              Tiempos de descarga
             </dt>
             <dd className="mt-0.5 text-sm/6 text-gray-500 dark:text-gray-500">
-              Competition level measured by number and size of bidders over time
+              La cantidad de tiempo que se tardo en descargar el producto
             </dd>
           </div>
           <ConditionalBarChart

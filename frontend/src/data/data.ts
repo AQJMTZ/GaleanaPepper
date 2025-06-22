@@ -19,7 +19,7 @@ interface Region {
 
 export const quotes: Region[] = [
   {
-    region: "Europe",
+    region: "Mexico",
     project: [
       {
         company: "Walton Holding",
@@ -43,7 +43,7 @@ export const quotes: Region[] = [
         ],
       },
       {
-        company: "Zurich Coats LLC",
+        company: "Sistema",
         size: "100-150K USD",
         probability: "80%",
         duration: "24 months",

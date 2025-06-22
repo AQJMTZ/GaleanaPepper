@@ -111,7 +111,7 @@ export function DropdownUserProfile({
           <DropdownMenuGroup>
             <DropdownMenuItem>
               <a href="#" className="w-full">
-                Sign out
+                Cierrar Sesion
               </a>
             </DropdownMenuItem>
           </DropdownMenuGroup>

@@ -7,9 +7,9 @@ import React from "react"
 import { siteConfig } from "../siteConfig"
 
 const navigation = [
-  { name: "Overview", href: siteConfig.baseLinks.quotes.overview },
-  { name: "Monitoring", href: siteConfig.baseLinks.quotes.monitoring },
-  { name: "Audits", href: siteConfig.baseLinks.quotes.audits },
+  { name: "Registros de materiales", href: siteConfig.baseLinks.quotes.overview },
+  { name: "Dashboard de monitoreo", href: siteConfig.baseLinks.quotes.monitoring },
+  { name: "Busqueda por folio", href: siteConfig.baseLinks.quotes.audits },
 ]
 export default function Layout({
   children,

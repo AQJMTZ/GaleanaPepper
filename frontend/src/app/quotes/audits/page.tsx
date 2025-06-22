@@ -29,7 +29,7 @@ export default function Audits() {
       <div className="flex flex-col items-center justify-between gap-2 p-6 sm:flex-row">
         <Input
           type="search"
-          placeholder="Search audits..."
+          placeholder="Buscar por folio..."
           className="sm:w-64 [&>input]:py-1.5"
         />
         <Button
@@ -40,7 +40,7 @@ export default function Audits() {
             className="-ml-0.5 size-4 shrink-0 text-gray-400 dark:text-gray-600"
             aria-hidden="true"
           />
-          Filters
+          Filtros
         </Button>
       </div>
       <div className="border-t border-gray-200 px-6 pb-6 dark:border-gray-800">
@@ -65,8 +65,8 @@ export default function Audits() {
                 <div className="mt-2 grid grid-cols-1 gap-8 md:grid-cols-2">
                   <div>
                     <p className="flex items-center justify-between text-sm font-medium text-gray-900 dark:text-gray-50">
-                      <span>Audit round</span>
-                      <span>Auditor</span>
+                      <span>Fecha de ingreso</span>
+                      <span>Proveedor</span>
                     </p>
                     <ul className="mt-1 divide-y divide-gray-200 text-sm text-gray-600 dark:divide-gray-800 dark:text-gray-400">
                       {section.auditDates.map((audit, index) => (

@@ -25,7 +25,7 @@ export function Breadcrumbs() {
                 // aria-current={page.current ? 'page' : undefined}
                 className="text-gray-900 dark:text-gray-50"
               >
-                Quotes
+                Dashboard
               </Link>
             </div>
           </li>

@@ -52,19 +52,19 @@ function Indicator({ number }: { number: number }) {
 
 const metrics: Metric[] = [
   {
-    label: "Lead-to-Quote Ratio",
+    label: "Toneladas procesadas",
     value: 0.61,
     percentage: "59.8%",
     fraction: "450/752",
   },
   {
-    label: "Project Load",
+    label: "Tiempo promedio de procesamiento",
     value: 0.24,
     percentage: "12.9%",
     fraction: "129/1K",
   },
   {
-    label: "Win Probability",
+    label: "Porcentaje de cumplimiento",
     value: 0.8,
     percentage: "85.1%",
     fraction: "280/329",
@@ -94,7 +94,7 @@ export function MetricsCards() {
   return (
     <>
       <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
-        Overview
+        Visión General
       </h1>
       <dl className="mt-6 flex flex-wrap items-center gap-x-12 gap-y-8">
         {metrics.map((metric) => (

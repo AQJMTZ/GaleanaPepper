@@ -44,7 +44,7 @@ export default function Overview() {
       <div className="flex flex-col justify-between gap-2 px-4 py-6 sm:flex-row sm:items-center sm:p-6">
         <Input
           type="search"
-          placeholder="Search quotes..."
+          placeholder="Buscar Material..."
           className="sm:w-64 [&>input]:py-1.5"
         />
         <div className="flex flex-col items-center gap-2 sm:flex-row">
@@ -66,7 +66,7 @@ export default function Overview() {
               className="-ml-0.5 size-4 shrink-0 text-gray-400 dark:text-gray-600"
               aria-hidden="true"
             />
-            Export
+            Exportar
           </Button>
         </div>
       </div>
@@ -74,11 +74,11 @@ export default function Overview() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableHeaderCell>Company</TableHeaderCell>
-              <TableHeaderCell>Deal Size</TableHeaderCell>
-              <TableHeaderCell>Win Probability</TableHeaderCell>
-              <TableHeaderCell>Project Duration</TableHeaderCell>
-              <TableHeaderCell>Assigned</TableHeaderCell>
+              <TableHeaderCell>Folio</TableHeaderCell>
+              <TableHeaderCell>Peso</TableHeaderCell>
+              <TableHeaderCell>Camion</TableHeaderCell>
+              <TableHeaderCell>Tiempo de descarga</TableHeaderCell>
+              <TableHeaderCell>Proveedor</TableHeaderCell>
               <TableHeaderCell>Status</TableHeaderCell>
             </TableRow>
           </TableHead>

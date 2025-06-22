@@ -1,7 +1,7 @@
 export const siteConfig = {
-  name: "Planner",
+  name: "Sistema de Galeana Pepper ",
   url: "https://planner.tremor.so",
-  description: "The simplest dashboard template.",
+  description: ".",
   baseLinks: {
     quotes: {
       overview: "/quotes/overview",

@@ -40,44 +40,34 @@ const navigation = [
 
 const navigation2 = [
   {
-    name: "Sales",
+    name: "Inventario",
     href: "#",
     icon: BookText,
     children: [
       {
-        name: "Quotes",
+        name: "Dashboard",
         href: "#",
         active: true,
       },
       {
-        name: "Orders",
-        href: "#",
-        active: false,
-      },
-      {
-        name: "Insights & Reports",
+        name: "Reportes de Inventario",
         href: "#",
         active: false,
       },
     ],
   },
   {
-    name: "Products",
+    name: "Proveedores",
     href: "#",
     icon: PackageSearch,
     children: [
       {
-        name: "Items",
+        name: "Agregar Proveedor",
         href: "#",
         active: false,
       },
       {
-        name: "Variants",
-        href: "#",
-        active: false,
-      },
-      {
-        name: "Suppliers",
+        name: "Padron de Proveedores",
         href: "#",
         active: false,
       },
@@ -106,10 +96,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </span>
           <div>
             <span className="block text-sm font-semibold text-gray-900 dark:text-gray-50">
-              Innovex Systems
+              Galeana Pepper
             </span>
             <span className="block text-xs text-gray-900 dark:text-gray-50">
-              Premium Starter Plan
+              Manejo de Inventario
             </span>
           </div>
         </div>
@@ -119,7 +109,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupContent>
             <Input
               type="search"
-              placeholder="Search items..."
+              placeholder="Buscar sección..."
               className="[&>input]:sm:py-1.5"
             />
           </SidebarGroupContent>
