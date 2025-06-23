@@ -1,9 +1,19 @@
-// File: /frontend/src/app/registro/page.tsx
 'use client';
 
 import { useState } from "react";
-import {Input} from "@/components/Input"
+import {Input} from "@/components/Input";
 import {Button} from "@/components/Button";
+
+// Función para obtener el siguiente folio consecutivo
+function getNextFolio(): string {
+  // Trae el último folio de localStorage, si no hay inicia en 1
+  const lastFolio = parseInt(localStorage.getItem("folio-camion") || "0", 10);
+  const nextFolio = lastFolio + 1;
+  // Guarda el nuevo folio en localStorage
+  localStorage.setItem("folio-camion", nextFolio.toString());
+  // Formatea el folio a 4 dígitos, ejemplo: 0001, 0002, etc.
+  return nextFolio.toString().padStart(4, "0");
+}
 
 export default function RegistroCamionPage() {
   const [form, setForm] = useState({
@@ -13,6 +23,7 @@ export default function RegistroCamionPage() {
     fechaIngreso: '',
     numEconomico: ''
   });
+  const [folio, setFolio] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -20,20 +31,36 @@ export default function RegistroCamionPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Aquí va la lógica para enviar el formulario a backend o API
-    alert(`Datos capturados:\n${JSON.stringify(form, null, 2)}`);
+    const folioGenerado = getNextFolio();
+    setFolio(folioGenerado);
+
+    // Guardar localmente el registro con folio
+    const registros = JSON.parse(localStorage.getItem("registros-producto") || "[]");
+    registros.push({ ...form, folio: folioGenerado });
+    localStorage.setItem("registros-camion", JSON.stringify(registros));
+  };
+
+  const handleCloseModal = () => {
+    setFolio(null);
+    setForm({
+      peso: '',
+      placas: '',
+      horaIngreso: '',
+      fechaIngreso: '',
+      numEconomico: ''
+    });
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-50">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 relative">
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-2xl rounded-2xl p-8 max-w-md w-full space-y-6"
+        className={`bg-black shadow-2xl rounded-2xl p-8 max-w-md w-full space-y-6 ${folio ? "pointer-events-none opacity-30" : ""}`}
       >
-        <h1 className="text-2xl font-bold mb-4 text-center">Registro de Camión</h1>
+        <h1 className="text-2xl font-bold mb-4 text-center">Registro Inicial</h1>
 
         <Input
-          label="Peso (kg)"
+          placeholder="Peso (kg)"
           id="peso"
           name="peso"
           type="number"
@@ -45,7 +72,7 @@ export default function RegistroCamionPage() {
         />
 
         <Input
-          label="Placas del camión"
+          placeholder="Placas del camión"
           id="placas"
           name="placas"
           type="text"
@@ -55,7 +82,7 @@ export default function RegistroCamionPage() {
         />
 
         <Input
-          label="Fecha de ingreso"
+          placeholder="Fecha de ingreso"
           id="fechaIngreso"
           name="fechaIngreso"
           type="date"
@@ -65,7 +92,7 @@ export default function RegistroCamionPage() {
         />
 
         <Input
-          label="Hora de ingreso"
+          placeholder="Hora de ingreso"
           id="horaIngreso"
           name="horaIngreso"
           type="time"
@@ -75,7 +102,7 @@ export default function RegistroCamionPage() {
         />
 
         <Input
-          label="Número económico proveedor"
+          placeholder="Número económico proveedor"
           id="numEconomico"
           name="numEconomico"
           type="text"
@@ -88,6 +115,25 @@ export default function RegistroCamionPage() {
           Registrar
         </Button>
       </form>
+
+      {/* Modal Pop-Up */}
+      {folio && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center relative">
+            <h2 className="text-lg font-bold mb-2 text-green-700">¡Registro exitoso!</h2>
+            <p className="mb-4">
+              <span className="font-semibold">Folio de registro:</span><br />
+              <span className="text-lg text-green-800">{folio}</span>
+            </p>
+            <button
+              onClick={handleCloseModal}
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6 py-2 font-bold shadow transition"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
