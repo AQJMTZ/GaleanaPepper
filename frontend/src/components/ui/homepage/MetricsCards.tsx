@@ -1,16 +1,22 @@
-type Category = "red" | "orange" | "emerald" | "gray"
+'use client';
+
+import { useEffect, useState } from "react";
+
+// ... Indicator y helpers igual que en tu código ...
+
+type Category = "red" | "orange" | "emerald" | "gray";
 type Metric = {
   label: string
   value: number
   percentage: string
   fraction: string
-}
+};
 
 const getCategory = (value: number): Category => {
-  if (value < 0.3) return "red"
-  if (value < 0.7) return "orange"
-  return "emerald"
-}
+  if (value < 0.3) return "red";
+  if (value < 0.7) return "orange";
+  return "emerald";
+};
 
 const categoryConfig = {
   red: {
@@ -29,12 +35,12 @@ const categoryConfig = {
     activeClass: "bg-gray-300 dark:bg-gray-800",
     bars: 0,
   },
-} as const
+} as const;
 
 function Indicator({ number }: { number: number }) {
-  const category = getCategory(number)
-  const config = categoryConfig[category]
-  const inactiveClass = "bg-gray-300 dark:bg-gray-800"
+  const category = getCategory(number);
+  const config = categoryConfig[category];
+  const inactiveClass = "bg-gray-300 dark:bg-gray-800";
 
   return (
     <div className="flex gap-0.5">
@@ -47,29 +53,29 @@ function Indicator({ number }: { number: number }) {
         />
       ))}
     </div>
-  )
+  );
 }
 
-const metrics: Metric[] = [
-  {
-    label: "Toneladas procesadas",
-    value: 0.61,
-    percentage: "59.8%",
-    fraction: "450/752",
-  },
-  {
-    label: "Tiempo promedio de procesamiento",
-    value: 0.24,
-    percentage: "12.9%",
-    fraction: "129/1K",
-  },
-  {
-    label: "Porcentaje de cumplimiento",
-    value: 0.8,
-    percentage: "85.1%",
-    fraction: "280/329",
-  },
-]
+// Utilidades para comparar fechas (solo año-mes-día)
+function esHoy(dateString: string) {
+  const hoy = new Date();
+  const d = new Date(dateString);
+  return (
+    hoy.getFullYear() === d.getFullYear() &&
+    hoy.getMonth() === d.getMonth() &&
+    hoy.getDate() === d.getDate()
+  );
+}
+function segundosAHHMMSS(segundos: number) {
+  const h = Math.floor(segundos / 3600);
+  const m = Math.floor((segundos % 3600) / 60);
+  const s = segundos % 60;
+  return [
+    h.toString().padStart(2, "0"),
+    m.toString().padStart(2, "0"),
+    s.toString().padStart(2, "0"),
+  ].join(":");
+}
 
 function MetricCard({ metric }: { metric: Metric }) {
   return (
@@ -87,10 +93,98 @@ function MetricCard({ metric }: { metric: Metric }) {
         </p>
       </dd>
     </div>
-  )
+  );
 }
 
 export function MetricsCards() {
+  const [metrics, setMetrics] = useState<Metric[]>([]);
+
+  // Actualiza cada segundo para visión en tiempo real
+  useEffect(() => {
+    function calcular() {
+      // Datos procesados (productos que sí se procesaron)
+      const procesados = (() => {
+        try {
+          const arr = JSON.parse(localStorage.getItem("folio-producto") || "[]");
+          return Array.isArray(arr) ? arr : [];
+        } catch {
+          return [];
+        }
+      })();
+
+      // Datos registrados (todos los que entraron hoy)
+      const registrados = (() => {
+        try {
+          const arr = JSON.parse(localStorage.getItem("registros-camion") || "[]");
+          return Array.isArray(arr) ? arr : [];
+        } catch {
+          return [];
+        }
+      })();
+
+      // --- FILTROS DEL DÍA ---
+      const procesadosHoy = procesados.filter(
+        (p: any) =>
+          p.horaInicio && esHoy(p.horaInicio)
+      );
+      const registradosHoy = registrados.filter(
+        (r: any) =>
+          r.fechaIngreso && esHoy(r.fechaIngreso)
+      );
+
+      // --- 1. Toneladas procesadas hoy ---
+      // Suma el peso de cada procesado del día
+      const sumaPesos = procesadosHoy.reduce(
+        (acc: number, p: any) => acc + (parseFloat(p.peso) || 0),
+        0
+      );
+      // Para presentación: toneladas si son muchos kg
+      const toneladas = sumaPesos / 1000;
+
+      // --- 2. Tiempo promedio de procesamiento hoy ---
+      const sumDuracion = procesadosHoy.reduce(
+        (acc: number, p: any) => acc + (parseFloat(p.duracionSegundos) || 0),
+        0
+      );
+      const tiempoPromedio =
+        procesadosHoy.length > 0 ? sumDuracion / procesadosHoy.length : 0;
+
+      // --- 3. Porcentaje de cumplimiento hoy ---
+      // (cuántos registrados hoy SÍ llegaron a procesarse)
+      const cumplimiento =
+        registradosHoy.length > 0
+          ? procesadosHoy.length / registradosHoy.length
+          : 0;
+
+      setMetrics([
+        {
+          label: "Toneladas procesadas",
+          value: toneladas > 1 ? 1 : toneladas, // indicador (para color, puedes ajustar)
+          percentage: `${toneladas.toFixed(2)} t`,
+          fraction: `${sumaPesos} kg`,
+        },
+        {
+          label: "Tiempo promedio de procesamiento",
+          value: tiempoPromedio / 3600, // escala para el indicador
+          percentage: segundosAHHMMSS(Math.round(tiempoPromedio)),
+          fraction: procesadosHoy.length
+            ? `${procesadosHoy.length} proceso(s)`
+            : "0",
+        },
+        {
+          label: "Porcentaje de cumplimiento",
+          value: cumplimiento,
+          percentage: `${(cumplimiento * 100).toFixed(1)}%`,
+          fraction: `${procesadosHoy.length}/${registradosHoy.length}`,
+        },
+      ]);
+    }
+
+    calcular();
+    const interval = setInterval(calcular, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <>
       <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-50">
@@ -102,5 +196,5 @@ export function MetricsCards() {
         ))}
       </dl>
     </>
-  )
+  );
 }

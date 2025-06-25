@@ -20,6 +20,9 @@ import { BookText, House, PackageSearch } from "lucide-react"
 import * as React from "react"
 import { Logo } from "../../../../public/Logo"
 import { UserProfile } from "./UserProfile"
+import { usePathname } from "next/navigation";
+
+
 
 const navigation = [
   {
@@ -46,12 +49,17 @@ const navigation2 = [
     children: [
       {
         name: "Dashboard",
-        href: "#",
+        href: "/quotes/overview",
         active: true,
       },
       {
         name: "Reportes de Inventario",
-        href: "#",
+        href: "/inventario",
+        active: false,
+      },
+      {
+        name: "Registro de Productos",
+        href: "/registro/registro_inicial",
         active: false,
       },
     ],
@@ -76,6 +84,9 @@ const navigation2 = [
 ] as const
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const pathname = usePathname();
+
+  //Determina si el enlace esta activo
   const [openMenus, setOpenMenus] = React.useState<string[]>([
     navigation2[0].name,
     navigation2[1].name,
@@ -137,29 +148,31 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </div>
         <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu className="space-y-4">
-              {navigation2.map((item) => (
+             <SidebarMenu className="space-y-4">
+            {navigation2.map((item) => {
+              // Determina si algún hijo está activo para iluminar el botón de la sección
+              const isSectionActive = !!item.children?.some(
+                (child) => child.href !== "#" && pathname === child.href
+              );
+              return (
                 <SidebarMenuItem key={item.name}>
-                  {/* @CHRIS/SEV: discussion whether to componentize (-> state mgmt) */}
                   <button
                     onClick={() => toggleMenu(item.name)}
                     className={cx(
-                      "flex w-full items-center justify-between gap-x-2.5 rounded-md p-2 text-base text-gray-900 transition hover:bg-gray-200/50 sm:text-sm dark:text-gray-400 hover:dark:bg-gray-900 hover:dark:text-gray-50",
+                      "flex w-full items-center justify-between gap-x-2.5 rounded-md p-2 text-base transition sm:text-sm",
+                      isSectionActive
+                        ? "bg-gray-900 text-white shadow dark:bg-blue-900 dark:text-white"
+                        : "text-gray-900 hover:bg-gray-200/50 dark:text-gray-400 hover:dark:bg-gray-900 hover:dark:text-gray-50",
                       focusRing,
                     )}
                   >
                     <div className="flex items-center gap-2.5">
-                      <item.icon
-                        className="size-[18px] shrink-0"
-                        aria-hidden="true"
-                      />
+                      <item.icon className="size-[18px] shrink-0" aria-hidden="true" />
                       {item.name}
                     </div>
                     <RiArrowDownSFill
                       className={cx(
-                        openMenus.includes(item.name)
-                          ? "rotate-0"
-                          : "-rotate-90",
+                        openMenus.includes(item.name) ? "rotate-0" : "-rotate-90",
                         "size-5 shrink-0 transform text-gray-400 transition-transform duration-150 ease-in-out dark:text-gray-600",
                       )}
                       aria-hidden="true"
@@ -168,21 +181,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   {item.children && openMenus.includes(item.name) && (
                     <SidebarMenuSub>
                       <div className="absolute inset-y-0 left-4 w-px bg-gray-300 dark:bg-gray-800" />
-                      {item.children.map((child) => (
-                        <SidebarMenuItem key={child.name}>
-                          <SidebarSubLink
-                            href={child.href}
-                            isActive={child.active}
-                          >
-                            {child.name}
-                          </SidebarSubLink>
-                        </SidebarMenuItem>
-                      ))}
+                      {item.children.map((child) => {
+                        const isActive = child.href !== "#" && pathname === child.href;
+                        return (
+                          <SidebarMenuItem key={child.name}>
+                            <SidebarSubLink
+                              href={child.href}
+                              isActive={isActive}
+                              className={cx(
+                                isActive
+                                  ? "bg-gray-900 text-white shadow dark:bg-blue-900 dark:text-white"
+                                  : "hover:bg-gray-100 hover:dark:bg-gray-800"
+                              )}
+                            >
+                              {child.name}
+                            </SidebarSubLink>
+                          </SidebarMenuItem>
+                        );
+                      })}
                     </SidebarMenuSub>
                   )}
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+              );
+            })}
+          </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

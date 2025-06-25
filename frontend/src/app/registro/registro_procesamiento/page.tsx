@@ -17,9 +17,17 @@ export default function ProcesoCamionPage() {
 
   // Validar que el folio exista
   const validarFolio = (f: string) => {
-    const registros = JSON.parse(localStorage.getItem("registros-producto") || "[]");
-    return registros.some((r: any) => r.folio === f);
-  };
+  let registros;
+  try {
+    registros = JSON.parse(localStorage.getItem("folio-producto") || "[]");
+    // Si no es arreglo, lo forzamos a arreglo vacío
+    if (!Array.isArray(registros)) registros = [];
+  } catch {
+    registros = [];
+  }
+  return registros.some((r: any) => r.folio === f);
+};
+
 
   const handleFolioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFolio(e.target.value);
@@ -53,14 +61,14 @@ export default function ProcesoCamionPage() {
     e.preventDefault();
     if (!folioValido) return;
 
-    const procesos = JSON.parse(localStorage.getItem("procesos-camion") || "[]");
+    const procesos = JSON.parse(localStorage.getItem("folio-producto") || "[]");
     procesos.push({
       folio,
       horaInicio,
       duracionSegundos: cronometro,
       porcentajeSal
     });
-    localStorage.setItem("procesos-camion", JSON.stringify(procesos));
+    localStorage.setItem("folio-procuto", JSON.stringify(procesos));
 
     alert("¡Proceso guardado!");
     setFolio('');
@@ -82,32 +90,13 @@ export default function ProcesoCamionPage() {
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
       <form
         onSubmit={handleSubmit}
-        className="bg-white shadow-2xl rounded-2xl p-8 max-w-md w-full space-y-6"
+        className="bg-black shadow-2xl rounded-2xl p-8 max-w-md w-full space-y-6"
       >
-        <h1 className="text-2xl font-bold mb-4 text-center">Proceso de Camión</h1>
-
-        {/* Porcentaje de sal */}
-        <div>
-          <label htmlFor="porcentajeSal" className="block font-medium mb-1">
-            Porcentaje de sal: <span className="text-blue-800 font-bold">{porcentajeSal}%</span>
-          </label>
-          <input
-            type="range"
-            id="porcentajeSal"
-            name="porcentajeSal"
-            min={0}
-            max={22}
-            value={porcentajeSal}
-            step={0.1}
-            onChange={e => setPorcentajeSal(parseFloat(e.target.value))}
-            className="w-full accent-blue-600"
-          />
-        </div>
-
+        <h1 className="text-2xl font-bold mb-4 text-center">Registro de Proceso</h1>
         {/* Folio */}
         <div>
           <Input
-            label="Folio"
+            placeholder="Folio"
             id="folio"
             name="folio"
             type="text"
@@ -130,6 +119,23 @@ export default function ProcesoCamionPage() {
           {folioValido === false && (
             <span className="text-red-600 text-sm font-medium block mt-1">✖ Folio no encontrado</span>
           )}
+        </div>
+         {/* Porcentaje de sal */}
+        <div>
+          <label htmlFor="porcentajeSal" className="block font-medium mb-1">
+            Porcentaje de sal: <span className="text-white-950 font-bold">{porcentajeSal} %</span>
+          </label>
+          <input
+            type="range"
+            id="porcentajeSal"
+            name="porcentajeSal"
+            min={0}
+            max={22}
+            value={porcentajeSal}
+            step={0.1}
+            onChange={e => setPorcentajeSal(parseFloat(e.target.value))}
+            className="w-full accent-blue-600"
+          />
         </div>
 
         {/* Hora inicio y cronómetro */}

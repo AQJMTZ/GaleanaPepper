@@ -7,10 +7,10 @@ import {Button} from "@/components/Button";
 // Función para obtener el siguiente folio consecutivo
 function getNextFolio(): string {
   // Trae el último folio de localStorage, si no hay inicia en 1
-  const lastFolio = parseInt(localStorage.getItem("folio-camion") || "0", 10);
+  const lastFolio = parseInt(localStorage.getItem("folio-producto") || "0", 10);
   const nextFolio = lastFolio + 1;
   // Guarda el nuevo folio en localStorage
-  localStorage.setItem("folio-camion", nextFolio.toString());
+  localStorage.setItem("folio-producto", nextFolio.toString());
   // Formatea el folio a 4 dígitos, ejemplo: 0001, 0002, etc.
   return nextFolio.toString().padStart(4, "0");
 }
@@ -35,9 +35,9 @@ export default function RegistroCamionPage() {
     setFolio(folioGenerado);
 
     // Guardar localmente el registro con folio
-    const registros = JSON.parse(localStorage.getItem("registros-producto") || "[]");
-    registros.push({ ...form, folio: folioGenerado });
-    localStorage.setItem("registros-camion", JSON.stringify(registros));
+    const folio = JSON.parse(localStorage.getItem("folio-producto") || "[]");
+    folio.push({ ...form, folio: folioGenerado });
+    localStorage.setItem("folio-producto", JSON.stringify(folio));
   };
 
   const handleCloseModal = () => {
