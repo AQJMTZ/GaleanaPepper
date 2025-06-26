@@ -1,32 +1,52 @@
-'use client';
+"use client";
 
 import { useState } from "react";
 import {Input} from "@/components/Input";
 import {Button} from "@/components/Button";
+ 
 
-// Función para obtener el siguiente folio consecutivo
 function getNextFolio(): string {
-  // Trae el último folio de localStorage, si no hay inicia en 1
-  const lastFolio = parseInt(localStorage.getItem("folio-producto") || "0", 10);
+  const lastFolio = parseInt(localStorage.getItem("folio_producto") || "0", 10);
   const nextFolio = lastFolio + 1;
-  // Guarda el nuevo folio en localStorage
-  localStorage.setItem("folio-producto", nextFolio.toString());
-  // Formatea el folio a 4 dígitos, ejemplo: 0001, 0002, etc.
+  localStorage.setItem("folio_producto", nextFolio.toString());
   return nextFolio.toString().padStart(4, "0");
 }
 
-export default function RegistroCamionPage() {
+export default function RegistroInicialPage() {
   const [form, setForm] = useState({
-    peso: '',
+    pesoKg: '',
+    pesoLb: '',
     placas: '',
     horaIngreso: '',
     fechaIngreso: '',
-    numEconomico: ''
+    numEconomico: '',
+    tipoCamion: ''
   });
   const [folio, setFolio] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    let updatedForm = { ...form, [name]: value };
+
+    if (name === "pesoKg") {
+      const kg = parseFloat(value);
+      if (!isNaN(kg)) {
+        updatedForm.pesoLb = (kg * 2.20462).toFixed(2);
+      } else {
+        updatedForm.pesoLb = '';
+      }
+    }
+
+    if (name === "pesoLb") {
+      const lb = parseFloat(value);
+      if (!isNaN(lb)) {
+        updatedForm.pesoKg = (lb / 2.20462).toFixed(2);
+      } else {
+        updatedForm.pesoKg = '';
+      }
+    }
+
+    setForm(updatedForm);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,20 +54,28 @@ export default function RegistroCamionPage() {
     const folioGenerado = getNextFolio();
     setFolio(folioGenerado);
 
-    // Guardar localmente el registro con folio
-    const folio = JSON.parse(localStorage.getItem("folio-producto") || "[]");
-    folio.push({ ...form, folio: folioGenerado });
-    localStorage.setItem("folio-producto", JSON.stringify(folio));
+    let folios: any[] = [];
+    try {
+      const local = JSON.parse(localStorage.getItem("folio_producto") || "[]");
+      folios = Array.isArray(local) ? local : [];
+    } catch {
+      folios = [];
+    }
+
+    folios.push({ ...form, folio: folioGenerado });
+    localStorage.setItem("folio_producto", JSON.stringify(folios));
   };
 
   const handleCloseModal = () => {
     setFolio(null);
     setForm({
-      peso: '',
+      pesoKg: '',
+      pesoLb: '',
       placas: '',
       horaIngreso: '',
       fechaIngreso: '',
-      numEconomico: ''
+      numEconomico: '',
+      tipoCamion: ''
     });
   };
 
@@ -59,17 +87,29 @@ export default function RegistroCamionPage() {
       >
         <h1 className="text-2xl font-bold mb-4 text-center">Registro Inicial</h1>
 
-        <Input
-          placeholder="Peso (kg)"
-          id="peso"
-          name="peso"
-          type="number"
-          step="0.01"
-          min="0"
-          required
-          value={form.peso}
-          onChange={handleChange}
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <Input
+            placeholder="Peso (kg)"
+            id="pesoKg"
+            name="pesoKg"
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.pesoKg}
+            onChange={handleChange}
+          />
+
+          <Input
+            placeholder="Peso (lb)"
+            id="pesoLb"
+            name="pesoLb"
+            type="number"
+            step="0.01"
+            min="0"
+            value={form.pesoLb}
+            onChange={handleChange}
+          />
+        </div>
 
         <Input
           placeholder="Placas del camión"
@@ -111,12 +151,23 @@ export default function RegistroCamionPage() {
           onChange={handleChange}
         />
 
+        <select
+          name="tipoCamion"
+          value={form.tipoCamion}
+          onChange={handleChange}
+          className="w-full rounded-md border-gray-300 p-2 text-sm text-gray-900"
+          required
+        >
+          <option value="">Selecciona tipo de camión</option>
+          <option value="trailer">Tráiler</option>
+          <option value="liquidos">Líquidos</option>
+        </select>
+
         <Button type="submit" className="w-full mt-4">
           Registrar
         </Button>
       </form>
 
-      {/* Modal Pop-Up */}
       {folio && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
           <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center relative">

@@ -1,25 +1,23 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import {Button} from "@/components/Button";
-import {Badge} from "@/components/Badge";
+import { Button } from "@/components/Button";
+import { Badge } from "@/components/Badge";
 
 const getRegistrosPendientes = () => {
   try {
-    const arr = JSON.parse(localStorage.getItem("folio-producto") || "[]");
-    return Array.isArray(arr) ? arr : [];
+    const arr = JSON.parse(localStorage.getItem("folio_producto") || "[]");
+    return Array.isArray(arr) ? arr.filter((r: any) => r.estado !== "procesado") : [];
   } catch {
     return [];
   }
 };
 
-// Función para calcular tiempo transcurrido desde la hora y fecha de ingreso
 function tiempoTranscurrido(fecha: string, hora: string) {
   if (!fecha || !hora) return "--:--:--";
   const fechaIngreso = new Date(`${fecha}T${hora}`);
   const ahora = new Date();
-  const diff = Math.floor((ahora.getTime() - fechaIngreso.getTime()) / 1000); // segundos
+  const diff = Math.floor((ahora.getTime() - fechaIngreso.getTime()) / 1000);
   const horas = Math.floor(diff / 3600);
   const minutos = Math.floor((diff % 3600) / 60);
   const segundos = diff % 60;
@@ -28,41 +26,39 @@ function tiempoTranscurrido(fecha: string, hora: string) {
 
 export default function ListaEsperaPage() {
   const [registros, setRegistros] = useState<any[]>([]);
-  const [_, setTick] = useState(0); // para refrescar el tiempo cada segundo
-  const router = useRouter();
+  const [_, setTick] = useState(0);
+  const [folioToConfirm, setFolioToConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     setRegistros(getRegistrosPendientes());
-    // Refresca el tiempo en pantalla cada segundo
-    const interval = setInterval(() => setTick(t => t + 1), 1000);
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(interval);
   }, []);
 
- const handleProcesar = (folio: string) => {
-  // Elimina el registro de la lista de espera
-  const registros = JSON.parse(localStorage.getItem("folio-producto") || "[]");
-  const nuevosRegistros = registros.filter((r: any) => r.folio !== folio);
-  localStorage.setItem("folio-producto", JSON.stringify(nuevosRegistros));
+  useEffect(() => {
+    const refrescar = () => setRegistros(getRegistrosPendientes());
+    setRegistros(getRegistrosPendientes());
+    window.addEventListener("storage", refrescar);
+    const interval = setInterval(refrescar, 1000);
+    return () => {
+      window.removeEventListener("storage", refrescar);
+      clearInterval(interval);
+    };
+  }, []);
 
-  // Redirigir a /procesar_producto/[folio]
-  router.push(`/procesar_producto`);
-};
-
-//Refresca la lista de registros pendientes cada segundo y al cargar la pagina
-useEffect(() => {
-  const refrescar = () => setRegistros(getRegistrosPendientes());
-  setRegistros(getRegistrosPendientes());
-
-  window.addEventListener("storage", refrescar);
-  const interval = setInterval(refrescar, 1000);
-
-  return () => {
-    window.removeEventListener("storage", refrescar);
-    clearInterval(interval);
+  const handleProcesar = (folio: string) => {
+    setFolioToConfirm(folio);
   };
-}, []);
 
-
+  const confirmarProcesar = () => {
+    if (!folioToConfirm) return;
+    const registros = JSON.parse(localStorage.getItem("folio_producto") || "[]");
+    const actualizados = registros.map((r: any) =>
+      r.folio === folioToConfirm ? { ...r, estado: "procesado" } : r
+    );
+    localStorage.setItem("folio_producto", JSON.stringify(actualizados));
+    setFolioToConfirm(null);
+  };
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">
@@ -108,6 +104,30 @@ useEffect(() => {
           </tbody>
         </table>
       </div>
+
+      {folioToConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow-xl w-full max-w-sm">
+            <h2 className="text-lg font-semibold text-center mb-4">
+              ¿Seguro que quieres procesar el folio <span className="text-blue-600">{folioToConfirm}</span>?
+            </h2>
+            <div className="flex justify-between mt-6">
+              <Button
+                className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
+                onClick={() => setFolioToConfirm(null)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+                onClick={confirmarProcesar}
+              >
+                Confirmar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

@@ -62,6 +62,26 @@ const navigation2 = [
         href: "/registro/registro_inicial",
         active: false,
       },
+      {
+        name: "Lista de Espera",
+        href: "/lista_espera",
+        active: false,
+      },
+      {
+        name: "Registro de Procesamiento",
+        href: "/registro/registro_procesamiento",
+        active: false,
+      },
+      {
+        name: "Registro de Tanque",
+        href: "/registro/registro_tanque",
+        active: false,
+      },
+      {
+        name: "Registro de Salida",
+      href: "/registro/registro_salida",
+      active: false,
+      },
     ],
   },
   {
@@ -71,12 +91,12 @@ const navigation2 = [
     children: [
       {
         name: "Agregar Proveedor",
-        href: "#",
+        href: "/proveedores/agregar",
         active: false,
       },
       {
         name: "Padron de Proveedores",
-        href: "#",
+        href: "/proveedores/padron",
         active: false,
       },
     ],

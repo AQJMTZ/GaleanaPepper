@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from "react";
-import {Table} from "@/components/Table";
-import {Badge} from "@/components/Badge";
+import { Table } from "@/components/Table";
+import { Badge } from "@/components/Badge";
 
 function segundosAHHMMSS(segundos: number) {
   const h = Math.floor(segundos / 3600);
@@ -17,16 +17,14 @@ function segundosAHHMMSS(segundos: number) {
 
 const obtenerProcesados = () => {
   try {
-    const arr = JSON.parse(localStorage.getItem("folio-producto") || "[]");
-    return Array.isArray(arr) ? arr : [];
+    const arr = JSON.parse(localStorage.getItem("folio_producto") || "[]");
+    return Array.isArray(arr) ? arr.filter((p) => p.estado === "procesado") : [];
   } catch {
     return [];
   }
 };
 
-// Función para crear el XML y disparar la descarga
 function descargarComoXML(datos: any[]) {
-  // Construir el string XML
   const xml = [
     '<?xml version="1.0" encoding="UTF-8"?>',
     "<InventarioProcesado>",
@@ -47,7 +45,6 @@ function descargarComoXML(datos: any[]) {
     "</InventarioProcesado>",
   ].join("\n");
 
-  // Descargar el archivo
   const blob = new Blob([xml], { type: "application/xml" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -64,9 +61,6 @@ export default function InventarioProcesadoPage() {
 
   useEffect(() => {
     setProcesados(obtenerProcesados());
-    // Opcional: refrescar cada 10 segundos
-    // const int = setInterval(() => setProcesados(obtenerProcesados()), 10000);
-    // return () => clearInterval(int);
   }, []);
 
   return (

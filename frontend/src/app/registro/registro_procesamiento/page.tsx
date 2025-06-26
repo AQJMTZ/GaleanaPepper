@@ -19,7 +19,7 @@ export default function ProcesoCamionPage() {
   const validarFolio = (f: string) => {
   let registros;
   try {
-    registros = JSON.parse(localStorage.getItem("folio-producto") || "[]");
+    registros = JSON.parse(localStorage.getItem("folio_producto") || "[]");
     // Si no es arreglo, lo forzamos a arreglo vacío
     if (!Array.isArray(registros)) registros = [];
   } catch {
@@ -61,14 +61,14 @@ export default function ProcesoCamionPage() {
     e.preventDefault();
     if (!folioValido) return;
 
-    const procesos = JSON.parse(localStorage.getItem("folio-producto") || "[]");
+    const procesos = JSON.parse(localStorage.getItem("folio_producto") || "[]");
     procesos.push({
       folio,
       horaInicio,
       duracionSegundos: cronometro,
       porcentajeSal
     });
-    localStorage.setItem("folio-procuto", JSON.stringify(procesos));
+    localStorage.setItem("folio_procuto", JSON.stringify(procesos));
 
     alert("¡Proceso guardado!");
     setFolio('');

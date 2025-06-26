@@ -21,7 +21,7 @@ export function Breadcrumbs() {
           <li className="flex">
             <div className="flex items-center">
               <Link
-                href="#"
+                href="/quotes/overview"
                 // aria-current={page.current ? 'page' : undefined}
                 className="text-gray-900 dark:text-gray-50"
               >

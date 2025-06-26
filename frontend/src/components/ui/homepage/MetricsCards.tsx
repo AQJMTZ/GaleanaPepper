@@ -105,7 +105,7 @@ export function MetricsCards() {
       // Datos procesados (productos que sí se procesaron)
       const procesados = (() => {
         try {
-          const arr = JSON.parse(localStorage.getItem("folio-producto") || "[]");
+          const arr = JSON.parse(localStorage.getItem("folio_producto") || "[]");
           return Array.isArray(arr) ? arr : [];
         } catch {
           return [];
@@ -115,7 +115,7 @@ export function MetricsCards() {
       // Datos registrados (todos los que entraron hoy)
       const registrados = (() => {
         try {
-          const arr = JSON.parse(localStorage.getItem("registros-camion") || "[]");
+          const arr = JSON.parse(localStorage.getItem("folio_producto") || "[]");
           return Array.isArray(arr) ? arr : [];
         } catch {
           return [];
