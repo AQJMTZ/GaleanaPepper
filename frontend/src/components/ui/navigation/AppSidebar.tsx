@@ -58,28 +58,33 @@ const navigation2 = [
         active: false,
       },
       {
-        name: "Registro de Productos",
-        href: "/registro/registro_inicial",
+        name: "Registro Inicial",
+        href: "/registro/inicial",
+        active: false,
+      },{
+        name: "Registro Pesaje",
+        href: "/registro/pesaje/primero",
         active: false,
       },
       {
-        name: "Lista de Espera",
-        href: "/lista_espera",
+        name: "Segundo Pesaje",
+        href: "/registro/pesaje/segundo",
         active: false,
       },
       {
         name: "Registro de Procesamiento",
-        href: "/registro/registro_procesamiento",
+        href: "/registro/procesamiento",
         active: false,
       },
+
       {
         name: "Registro de Tanque",
-        href: "/registro/registro_tanque",
+        href: "/registro/tanque",
         active: false,
       },
       {
         name: "Registro de Salida",
-      href: "/registro/registro_salida",
+      href: "/registro/salida",
       active: false,
       },
     ],

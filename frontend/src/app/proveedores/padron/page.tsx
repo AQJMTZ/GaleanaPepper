@@ -3,55 +3,65 @@
 import { useEffect, useState } from "react";
 import { Table } from "@/components/Table";
 import { Badge } from "@/components/Badge";
-import {Button} from "@/components/Button";
+import { Button } from "@/components/Button";
+import { createClient } from '@supabase/supabase-js';
 
-const obtenerProveedores = () => {
-  try {
-    const arr = JSON.parse(localStorage.getItem("proveedores") || "[]");
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
-  }
-};
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type Proveedor = {
-  nombre: string;
-  segundoNombre?: string;
-  apellido: string;
-  segundoApellido?: string;
-  numEconomico: string;
+  numero_economico: string;
+  Nombre: string;
+  Segundo_Nombre?: string;
+  Apellido: string;
+  Apellido_Materno?: string;
 };
 
 export default function PadronProveedoresPage() {
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
-  const [proveedorAEliminar, setProveedorAEliminar] = useState<number | null>(null);
-  const [proveedorAModificar, setProveedorAModificar] = useState<number | null>(null);
+  const [proveedorAEliminar, setProveedorAEliminar] = useState<string | null>(null);
+  const [proveedorAModificar, setProveedorAModificar] = useState<string | null>(null);
   const [formEdit, setFormEdit] = useState<Proveedor | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const fetchProveedores = async () => {
+    const { data, error } = await supabase.from("Proveedor").select("*");
+    if (data) setProveedores(data);
+    if (error) console.error("Error cargando proveedores:", error);
+  };
+
   useEffect(() => {
-    setProveedores(obtenerProveedores());
+    fetchProveedores();
   }, []);
 
-  // Eliminar proveedor
-  const handleEliminar = (idx: number) => setProveedorAEliminar(idx);
+  const handleEliminar = (num: string) => setProveedorAEliminar(num);
 
-  const confirmarEliminar = () => {
-    if (proveedorAEliminar === null) return;
-    const nuevos = [...proveedores];
-    nuevos.splice(proveedorAEliminar, 1);
-    localStorage.setItem("proveedores", JSON.stringify(nuevos));
-    setProveedores(nuevos);
+  const confirmarEliminar = async () => {
+    if (!proveedorAEliminar) return;
+    const { error } = await supabase
+      .from("Proveedor")
+      .delete()
+      .eq("numero_economico", proveedorAEliminar);
+
+    if (!error) {
+      await fetchProveedores();
+    } else {
+      console.error("Error al eliminar proveedor:", error);
+    }
     setProveedorAEliminar(null);
   };
 
   const cancelarEliminar = () => setProveedorAEliminar(null);
 
-  // Editar proveedor
-  const handleEditar = (idx: number) => {
-    setProveedorAModificar(idx);
-    setFormEdit({ ...proveedores[idx] });
-    setError(null);
+  const handleEditar = (num: string) => {
+    const proveedor = proveedores.find(p => p.numero_economico === num);
+    if (proveedor) {
+      setProveedorAModificar(num);
+      setFormEdit({ ...proveedor });
+      setError(null);
+    }
   };
 
   const cancelarEditar = () => {
@@ -65,30 +75,33 @@ export default function PadronProveedoresPage() {
     setFormEdit({ ...formEdit, [e.target.name]: e.target.value });
   };
 
-  const confirmarEditar = () => {
-    if (!formEdit || proveedorAModificar === null) return;
+  const confirmarEditar = async () => {
+    if (!formEdit || !proveedorAModificar) return;
 
-    // Validación simple
-    if (!formEdit.nombre.trim() || !formEdit.apellido.trim() || !formEdit.numEconomico.trim()) {
+    if (!formEdit.Nombre.trim() || !formEdit.Apellido.trim() || !formEdit.numero_economico.trim()) {
       setError("Nombre, apellido y número económico son obligatorios.");
       return;
     }
 
-    // Verifica duplicados de número económico (excepto el mismo)
-    if (proveedores.some(
-      (p, idx) => idx !== proveedorAModificar && p.numEconomico === formEdit.numEconomico
-    )) {
+    const duplicado = proveedores.some(
+      (p) => p.numero_economico !== proveedorAModificar && p.numero_economico === formEdit.numero_economico
+    );
+    if (duplicado) {
       setError("Ese número económico ya existe.");
       return;
     }
 
-    const nuevos = [...proveedores];
-    nuevos[proveedorAModificar] = formEdit;
-    localStorage.setItem("proveedores", JSON.stringify(nuevos));
-    setProveedores(nuevos);
-    setProveedorAModificar(null);
-    setFormEdit(null);
-    setError(null);
+    const { error } = await supabase
+      .from("Proveedor")
+      .update(formEdit)
+      .eq("numero_economico", proveedorAModificar);
+
+    if (!error) {
+      await fetchProveedores();
+      cancelarEditar();
+    } else {
+      console.error("Error al actualizar proveedor:", error);
+    }
   };
 
   return (
@@ -112,139 +125,48 @@ export default function PadronProveedoresPage() {
                 </td>
               </tr>
             )}
-            {proveedores.map((p, idx) => (
-              <tr key={idx} className="text-center">
-                <td>
-                  {p.nombre}
-                  {p.segundoNombre ? ` ${p.segundoNombre}` : ""}
-                </td>
-                <td>
-                  {p.apellido}
-                  {p.segundoApellido ? ` ${p.segundoApellido}` : ""}
-                </td>
-                <td>
-                  <Badge color="blue">{p.numEconomico}</Badge>
-                </td>
+            {proveedores.map((p) => (
+              <tr key={p.numero_economico} className="text-center">
+                <td>{p.Nombre}{p.Segundo_Nombre ? ` ${p.Segundo_Nombre}` : ""}</td>
+                <td>{p.Apellido}{p.Apellido_Materno ? ` ${p.Apellido_Materno}` : ""}</td>
+                <td><Badge color="blue">{p.numero_economico}</Badge></td>
                 <td className="flex flex-row gap-2 justify-center">
-                  <Button
-                    type="button"
-                    className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-1 rounded"
-                    onClick={() => handleEditar(idx)}
-                  >
-                    Modificar
-                  </Button>
-                  <Button
-                    type="button"
-                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
-                    onClick={() => handleEliminar(idx)}
-                  >
-                    Eliminar
-                  </Button>
+                  <Button type="button" className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-1 rounded" onClick={() => handleEditar(p.numero_economico)}>Modificar</Button>
+                  <Button type="button" className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded" onClick={() => handleEliminar(p.numero_economico)}>Eliminar</Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </Table>
 
-        {/* Pop-up de confirmación de eliminación */}
-        {proveedorAEliminar !== null && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-            <div className="bg-white rounded-xl shadow-xl p-8 max-w-sm w-full text-center">
-              <h2 className="text-lg font-bold mb-4 text-gray-900">¿Eliminar proveedor?</h2>
-              <p className="mb-6 text-gray-700">
-                ¿Seguro que deseas eliminar este proveedor? Esta acción no se puede deshacer.
-              </p>
-              <div className="flex gap-4 justify-center">
-                <Button
-                  type="button"
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                  onClick={confirmarEliminar}
-                >
-                  Sí, eliminar
-                </Button>
-                <Button
-                  type="button"
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded"
-                  onClick={cancelarEliminar}
-                >
-                  Cancelar
-                </Button>
+        {/* Modal Eliminar */}
+        {proveedorAEliminar && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-black p-6 rounded shadow-lg text-center">
+              <p className="mb-4">¿Estás seguro de eliminar este proveedor?</p>
+              <div className="flex justify-center gap-4">
+                <Button className="bg-red-600 text-white" onClick={confirmarEliminar}>Sí, eliminar</Button>
+                <Button className="bg-gray-300" onClick={cancelarEliminar}>Cancelar</Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Pop-up de modificación */}
-        {proveedorAModificar !== null && formEdit && (
-          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
-            <div className="bg-white rounded-xl shadow-xl p-8 max-w-sm w-full text-center">
-              <h2 className="text-lg font-bold mb-4 text-gray-900">Modificar proveedor</h2>
-              <form
-                onSubmit={e => { e.preventDefault(); confirmarEditar(); }}
-                className="space-y-4"
-              >
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    name="nombre"
-                    placeholder="Nombre"
-                    value={formEdit.nombre}
-                    onChange={handleEditChange}
-                    className="w-1/2 rounded border px-2 py-1"
-                    required
-                  />
-                  <input
-                    type="text"
-                    name="segundoNombre"
-                    placeholder="Segundo nombre"
-                    value={formEdit.segundoNombre || ""}
-                    onChange={handleEditChange}
-                    className="w-1/2 rounded border px-2 py-1"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    name="apellido"
-                    placeholder="Apellido"
-                    value={formEdit.apellido}
-                    onChange={handleEditChange}
-                    className="w-1/2 rounded border px-2 py-1"
-                    required
-                  />
-                  <input
-                    type="text"
-                    name="segundoApellido"
-                    placeholder="Segundo apellido"
-                    value={formEdit.segundoApellido || ""}
-                    onChange={handleEditChange}
-                    className="w-1/2 rounded border px-2 py-1"
-                  />
-                </div>
-                <input
-                  type="text"
-                  name="numEconomico"
-                  placeholder="Número económico"
-                  value={formEdit.numEconomico}
-                  onChange={handleEditChange}
-                  className="w-full rounded border px-2 py-1"
-                  required
-                />
-                {error && <div className="text-red-600 text-sm">{error}</div>}
-                <div className="flex gap-4 justify-center mt-4">
-                  <Button
-                    type="submit"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-                  >
-                    Guardar
-                  </Button>
-                  <Button
-                    type="button"
-                    className="bg-gray-300 hover:bg-gray-400 text-gray-900 px-4 py-2 rounded"
-                    onClick={cancelarEditar}
-                  >
-                    Cancelar
-                  </Button>
+        {/* Modal Editar */}
+        {formEdit && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-black p-6 rounded shadow-lg max-w-md w-full">
+              <h2 className="text-xl font-bold mb-4 text-center">Editar proveedor</h2>
+              <form onSubmit={(e) => { e.preventDefault(); confirmarEditar(); }} className="space-y-3">
+                <input type="text" name="Nombre" placeholder="Nombre" value={formEdit.Nombre} onChange={handleEditChange} className="w-full border rounded px-3 py-2" required />
+                <input type="text" name="Segundo_Nombre" placeholder="Segundo Nombre" value={formEdit.Segundo_Nombre || ""} onChange={handleEditChange} className="w-full border rounded px-3 py-2" />
+                <input type="text" name="Apellido" placeholder="Apellido" value={formEdit.Apellido} onChange={handleEditChange} className="w-full border rounded px-3 py-2" required />
+                <input type="text" name="Apellido_Materno" placeholder="Apellido Materno" value={formEdit.Apellido_Materno || ""} onChange={handleEditChange} className="w-full border rounded px-3 py-2" />
+                <input type="text" name="numero_economico" placeholder="Número Económico" value={formEdit.numero_economico} onChange={handleEditChange} className="w-full border rounded px-3 py-2" required />
+                {error && <p className="text-red-600 text-sm">{error}</p>}
+                <div className="flex justify-center gap-4 mt-4">
+                  <Button type="submit" className="bg-blue-600 text-white">Guardar</Button>
+                  <Button type="button" className="bg-gray-300" onClick={cancelarEditar}>Cancelar</Button>
                 </div>
               </form>
             </div>

@@ -1,86 +1,96 @@
 'use client';
 
-import { useState, useRef} from "react";
-import {Input} from "@/components/Input";
-import {Button} from "@/components/Button";
-import React from "react";
+import { useState, useRef, useEffect } from "react";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
+import { supabase } from "@/lib/supabaseClient";
+
+function segundosAHHMMSS(segundos) {
+  const h = Math.floor(segundos / 3600);
+  const m = Math.floor((segundos % 3600) / 60);
+  const s = segundos % 60;
+  return [
+    h.toString().padStart(2, "0"),
+    m.toString().padStart(2, "0"),
+    s.toString().padStart(2, "0"),
+  ].join(":");
+}
 
 export default function ProcesoCamionPage() {
   const [folio, setFolio] = useState('');
-  const [folioValido, setFolioValido] = useState<boolean | null>(null);
+  const [folioValido, setFolioValido] = useState(false);
+  const [horaInicio, setHoraInicio] = useState(null);
+  const [cronometro, setCronometro] = useState(0);
+  const cronometroRef = useRef(null);
+  const [porcentajeSal, setPorcentajeSal] = useState(0);
+  const [mensaje, setMensaje] = useState(null);
 
-  const [horaInicio, setHoraInicio] = useState<string | null>(null);
-  const [cronometro, setCronometro] = useState<number>(0); // en segundos
-  const cronometroRef = useRef<NodeJS.Timeout | null>(null);
+  const validarFolio = async (f) => {
+    const { data, error } = await supabase
+      .from("Producto")
+      .select("folio, estado")
+      .eq("folio", f)
+      .eq("estado", "procesar")
+      .single();
 
-  const [porcentajeSal, setPorcentajeSal] = useState<number>(0);
+    if (data && !error) {
+      setFolioValido(true);
+    } else {
+      setFolioValido(false);
+      setMensaje("Folio no encontrado o no está en estado 'procesar'.");
+    }
+  };
 
-  // Validar que el folio exista
-  const validarFolio = (f: string) => {
-  let registros;
-  try {
-    registros = JSON.parse(localStorage.getItem("folio_producto") || "[]");
-    // Si no es arreglo, lo forzamos a arreglo vacío
-    if (!Array.isArray(registros)) registros = [];
-  } catch {
-    registros = [];
-  }
-  return registros.some((r: any) => r.folio === f);
-};
-
-
-  const handleFolioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFolioChange = (e) => {
     setFolio(e.target.value);
-    setFolioValido(null);
+    setFolioValido(false);
+    setMensaje(null);
   };
 
-  const handleValidarFolio = () => {
-    setFolioValido(validarFolio(folio));
-  };
-
-  // Iniciar el proceso
   const handleIniciarProceso = () => {
     const now = new Date();
     setHoraInicio(now.toISOString());
     setCronometro(0);
-
     if (cronometroRef.current) clearInterval(cronometroRef.current);
-    cronometroRef.current = setInterval(() => {
-      setCronometro(c => c + 1);
-    }, 1000);
+    cronometroRef.current = setInterval(() => setCronometro(c => c + 1), 1000);
   };
 
-  // Detener el cronómetro al salir del componente
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (cronometroRef.current) clearInterval(cronometroRef.current);
-    }
+    };
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!folioValido) return;
 
-    const procesos = JSON.parse(localStorage.getItem("folio_producto") || "[]");
-    procesos.push({
-      folio,
-      horaInicio,
-      duracionSegundos: cronometro,
-      porcentajeSal
-    });
-    localStorage.setItem("folio_procuto", JSON.stringify(procesos));
+    const duracion = segundosAHHMMSS(cronometro);
 
-    alert("¡Proceso guardado!");
-    setFolio('');
-    setFolioValido(null);
-    setHoraInicio(null);
-    setCronometro(0);
-    setPorcentajeSal(0);
+    const { error } = await supabase
+      .from("Producto")
+      .update({
+        porcentaje_de_sal: porcentajeSal,
+        tiempo_en_fila: duracion,
+        estado: "procesado",
+      })
+      .eq("folio", folio);
+
+    if (!error) {
+      alert("¡Proceso guardado en la base de datos!");
+      setFolio('');
+      setFolioValido(false);
+      setHoraInicio(null);
+      setCronometro(0);
+      setPorcentajeSal(0);
+      setMensaje(null);
+    } else {
+      alert("Error al guardar: " + error.message);
+    }
     if (cronometroRef.current) clearInterval(cronometroRef.current);
   };
 
-  // Formatear el cronómetro
-  const formatTiempo = (segundos: number) => {
+  const formatTiempo = (segundos) => {
     const m = Math.floor(segundos / 60);
     const s = segundos % 60;
     return `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
@@ -93,7 +103,7 @@ export default function ProcesoCamionPage() {
         className="bg-black shadow-2xl rounded-2xl p-8 max-w-md w-full space-y-6"
       >
         <h1 className="text-2xl font-bold mb-4 text-center">Registro de Proceso</h1>
-        {/* Folio */}
+
         <div>
           <Input
             placeholder="Folio"
@@ -103,24 +113,20 @@ export default function ProcesoCamionPage() {
             required
             value={folio}
             onChange={handleFolioChange}
-            disabled={folioValido === true}
+            disabled={folioValido}
           />
           <Button
             type="button"
             className="mt-2 w-full"
-            onClick={handleValidarFolio}
-            disabled={!folio || folioValido === true}
+            onClick={() => validarFolio(folio)}
+            disabled={!folio || folioValido}
           >
             Validar folio
           </Button>
-          {folioValido === true && (
-            <span className="text-green-700 text-sm font-medium block mt-1">✔ Folio válido</span>
-          )}
-          {folioValido === false && (
-            <span className="text-red-600 text-sm font-medium block mt-1">✖ Folio no encontrado</span>
-          )}
+          {folioValido && <span className="text-green-700 text-sm font-medium block mt-1">✔ Folio válido</span>}
+          {mensaje && <span className="text-red-600 text-sm font-medium block mt-1">{mensaje}</span>}
         </div>
-         {/* Porcentaje de sal */}
+
         <div>
           <label htmlFor="porcentajeSal" className="block font-medium mb-1">
             Porcentaje de sal: <span className="text-white-950 font-bold">{porcentajeSal} %</span>
@@ -138,7 +144,6 @@ export default function ProcesoCamionPage() {
           />
         </div>
 
-        {/* Hora inicio y cronómetro */}
         <div>
           <label className="block font-medium mb-1">Hora de inicio del proceso</label>
           {horaInicio ? (
@@ -153,7 +158,7 @@ export default function ProcesoCamionPage() {
               type="button"
               className="w-full"
               onClick={handleIniciarProceso}
-              disabled={folioValido !== true}
+              disabled={!folioValido}
             >
               Iniciar proceso
             </Button>
@@ -163,7 +168,7 @@ export default function ProcesoCamionPage() {
         <Button
           type="submit"
           className="w-full mt-4"
-          disabled={folioValido !== true || !horaInicio}
+          disabled={!folioValido || !horaInicio}
         >
           Guardar proceso
         </Button>

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from "react";
-import {Input} from "@/components/Input";
-import {Button} from "@/components/Button";
+import { Input } from "@/components/Input";
+import { Button } from "@/components/Button";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function AgregarProveedorPage() {
   const [form, setForm] = useState({
@@ -18,39 +19,52 @@ export default function AgregarProveedorPage() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setMensaje(null);
 
-    // Recuperar y asegurar array en localStorage
-    let proveedores: any[] = [];
-    try {
-      const local = JSON.parse(localStorage.getItem("proveedores") || "[]");
-      proveedores = Array.isArray(local) ? local : [];
-    } catch {
-      proveedores = [];
-    }
+    const { nombre, segundoNombre, apellido, segundoApellido, numEconomico } = form;
 
-    // Puedes agregar validaciones aquí
-    if (
-      !form.nombre.trim() ||
-      !form.segundoNombre.trim() ||
-      !form.apellido.trim() ||
-      !form.numEconomico.trim()
-    ) {
+    if (!nombre || !segundoNombre || !apellido || !numEconomico) {
       setMensaje("Todos los campos son obligatorios.");
       return;
     }
 
-    // Verifica que no se repita el número económico
-    if (proveedores.some((p) => p.numEconomico === form.numEconomico)) {
+    // Verificar si el proveedor ya existe
+    const { data: existente, error: buscarError } = await supabase
+      .from("Proveedor")
+      .select("numero_economico")
+      .eq("numero_economico", numEconomico)
+      .single();
+
+    if (buscarError && buscarError.code !== "PGRST116") {
+      setMensaje("Error al verificar proveedor existente." + buscarError.message);
+      return;
+    }
+
+    if (existente) {
       setMensaje("Ese número económico ya existe.");
       return;
     }
 
-    proveedores.push({ ...form });
-    localStorage.setItem("proveedores", JSON.stringify(proveedores));
-    setMensaje("¡Proveedor agregado correctamente!");
-    setForm({ nombre: "", segundoNombre: "", apellido: "", segundoApellido: "", numEconomico: "" });
+    // Insertar nuevo proveedor
+    const { error } = await supabase.from("Proveedor").insert([
+      {
+        Nombre: nombre,
+        Segundo_Nombre: segundoNombre,
+        Apellido : apellido,
+        Apellido_Materno: segundoApellido,
+        numero_economico: numEconomico,
+      },
+    ]);
+
+    if (error) {
+      setMensaje("Error al guardar el proveedor." + error.message);
+      console.error(error);
+    } else {
+      setMensaje("¡Proveedor agregado correctamente!");
+      setForm({ nombre: "", segundoNombre: "", apellido: "", segundoApellido: "", numEconomico: "" });
+    }
   };
 
   return (
@@ -59,67 +73,18 @@ export default function AgregarProveedorPage() {
         onSubmit={handleSubmit}
         className="bg-black shadow-2xl rounded-2xl p-8 max-w-md w-full space-y-6"
       >
-        <h1 className="text-2xl font-bold mb-4 text-center">Agregar Proveedor</h1>
+        <h1 className="text-2xl font-bold mb-4 text-center text-white">Agregar Proveedor</h1>
 
-        <Input
-          placeholder="Nombre"
-          id="nombre"
-          name="nombre"
-          type="text"
-          required
-          value={form.nombre}
-          onChange={handleChange}
-        />
+        <Input placeholder="Nombre" name="nombre" type="text" required value={form.nombre} onChange={handleChange} />
+        <Input placeholder="Segundo nombre" name="segundoNombre" type="text" required value={form.segundoNombre} onChange={handleChange} />
+        <Input placeholder="Apellido" name="apellido" type="text" required value={form.apellido} onChange={handleChange} />
+        <Input placeholder="Segundo Apellido" name="segundoApellido" type="text" required value={form.segundoApellido} onChange={handleChange} />
+        <Input placeholder="Número económico" name="numEconomico" type="text" required value={form.numEconomico} onChange={handleChange} />
 
-         <Input
-          placeholder="Segundo nombre"
-          id="segundoNombre"
-          name="segundoNombre"
-          type="text"
-          required
-          value={form.segundoNombre}
-          onChange={handleChange}
-        />
-
-        <Input
-          placeholder="Apellido"
-          id="apellido"
-          name="apellido"
-          type="text"
-          required
-          value={form.apellido}
-          onChange={handleChange}
-        />
-         <Input
-          placeholder="Segundo Apellido"
-          id="segundoApellido"
-          name="segundoApellido"
-          type="text"
-          required
-          value={form.segundoApellido}
-          onChange={handleChange}
-        />
-
-        <Input
-          placeholder="Número económico"
-          id="numEconomico"
-          name="numEconomico"
-          type="text"
-          required
-          value={form.numEconomico}
-          onChange={handleChange}
-        />
-
-        <Button type="submit" className="w-full mt-4">
-          Agregar Proveedor
-        </Button>
+        <Button type="submit" className="w-full mt-4">Agregar Proveedor</Button>
 
         {mensaje && (
-          <div
-            className={`mt-4 p-2 rounded-lg text-center ${
-              mensaje.startsWith("¡") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-            }`}
-          >
+          <div className={`mt-4 p-2 rounded-lg text-center ${mensaje.startsWith("¡") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
             {mensaje}
           </div>
         )}

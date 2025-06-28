@@ -1,15 +1,19 @@
 'use client';
 
 import { useEffect, useState } from "react";
+import { createClient } from '@supabase/supabase-js';
 
-// ... Indicator y helpers igual que en tu código ...
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 type Category = "red" | "orange" | "emerald" | "gray";
 type Metric = {
-  label: string
-  value: number
-  percentage: string
-  fraction: string
+  label: string;
+  value: number;
+  percentage: string;
+  fraction: string;
 };
 
 const getCategory = (value: number): Category => {
@@ -19,22 +23,10 @@ const getCategory = (value: number): Category => {
 };
 
 const categoryConfig = {
-  red: {
-    activeClass: "bg-red-500 dark:bg-red-500",
-    bars: 1,
-  },
-  orange: {
-    activeClass: "bg-orange-500 dark:bg-orange-500",
-    bars: 2,
-  },
-  emerald: {
-    activeClass: "bg-emerald-500 dark:bg-emerald-500",
-    bars: 3,
-  },
-  gray: {
-    activeClass: "bg-gray-300 dark:bg-gray-800",
-    bars: 0,
-  },
+  red: { activeClass: "bg-red-500 dark:bg-red-500", bars: 1 },
+  orange: { activeClass: "bg-orange-500 dark:bg-orange-500", bars: 2 },
+  emerald: { activeClass: "bg-emerald-500 dark:bg-emerald-500", bars: 3 },
+  gray: { activeClass: "bg-gray-300 dark:bg-gray-800", bars: 0 },
 } as const;
 
 function Indicator({ number }: { number: number }) {
@@ -56,16 +48,20 @@ function Indicator({ number }: { number: number }) {
   );
 }
 
-// Utilidades para comparar fechas (solo año-mes-día)
+// ✅ Corrige parsing para yyyy/mm/dd
 function esHoy(dateString: string) {
+  const partes = dateString.split(/[\/\-]/);
+  if (partes.length < 3) return false;
+
+  const [yyyy, mm, dd] = partes.map(Number);
   const hoy = new Date();
-  const d = new Date(dateString);
   return (
-    hoy.getFullYear() === d.getFullYear() &&
-    hoy.getMonth() === d.getMonth() &&
-    hoy.getDate() === d.getDate()
+    hoy.getFullYear() === yyyy &&
+    hoy.getMonth() + 1 === mm &&
+    hoy.getDate() === dd
   );
 }
+
 function segundosAHHMMSS(segundos: number) {
   const h = Math.floor(segundos / 3600);
   const m = Math.floor((segundos % 3600) / 60);
@@ -99,58 +95,41 @@ function MetricCard({ metric }: { metric: Metric }) {
 export function MetricsCards() {
   const [metrics, setMetrics] = useState<Metric[]>([]);
 
-  // Actualiza cada segundo para visión en tiempo real
   useEffect(() => {
-    function calcular() {
-      // Datos procesados (productos que sí se procesaron)
-      const procesados = (() => {
-        try {
-          const arr = JSON.parse(localStorage.getItem("folio_producto") || "[]");
-          return Array.isArray(arr) ? arr : [];
-        } catch {
-          return [];
-        }
-      })();
+    async function calcular() {
+      const { data, error } = await supabase.from('Producto').select('*');
+      if (error || !data) {
+        console.error("Error al obtener datos de Supabase", error);
+        return;
+      }
 
-      // Datos registrados (todos los que entraron hoy)
-      const registrados = (() => {
-        try {
-          const arr = JSON.parse(localStorage.getItem("folio_producto") || "[]");
-          return Array.isArray(arr) ? arr : [];
-        } catch {
-          return [];
-        }
-      })();
-
-      // --- FILTROS DEL DÍA ---
-      const procesadosHoy = procesados.filter(
-        (p: any) =>
-          p.horaInicio && esHoy(p.horaInicio)
-      );
-      const registradosHoy = registrados.filter(
-        (r: any) =>
-          r.fechaIngreso && esHoy(r.fechaIngreso)
+      const registradosHoy = data.filter((r) =>
+        r.fecha_ingreso && esHoy(r.fecha_ingreso)
       );
 
-      // --- 1. Toneladas procesadas hoy ---
-      // Suma el peso de cada procesado del día
-      const sumaPesos = procesadosHoy.reduce(
-        (acc: number, p: any) => acc + (parseFloat(p.peso) || 0),
+      const procesadosHoy = data.filter(
+        (p) =>
+          p.estado === 'procesado' &&
+          p.hora_ingreso &&
+          esHoy(p.hora_ingreso)
+      );
+
+      const sumaKg = procesadosHoy.reduce(
+        (acc, p) => acc + (parseFloat(p.peso_neto_kg) || 0),
         0
       );
-      // Para presentación: toneladas si son muchos kg
-      const toneladas = sumaPesos / 1000;
+      const sumaLb = procesadosHoy.reduce(
+        (acc, p) => acc + (parseFloat(p.peso_neto_lb) || 0),
+        0
+      );
 
-      // --- 2. Tiempo promedio de procesamiento hoy ---
       const sumDuracion = procesadosHoy.reduce(
-        (acc: number, p: any) => acc + (parseFloat(p.duracionSegundos) || 0),
+        (acc, p) => acc + (parseFloat(p.duracionSegundos) || 0),
         0
       );
       const tiempoPromedio =
         procesadosHoy.length > 0 ? sumDuracion / procesadosHoy.length : 0;
 
-      // --- 3. Porcentaje de cumplimiento hoy ---
-      // (cuántos registrados hoy SÍ llegaron a procesarse)
       const cumplimiento =
         registradosHoy.length > 0
           ? procesadosHoy.length / registradosHoy.length
@@ -158,18 +137,16 @@ export function MetricsCards() {
 
       setMetrics([
         {
-          label: "Toneladas procesadas",
-          value: toneladas > 1 ? 1 : toneladas, // indicador (para color, puedes ajustar)
-          percentage: `${toneladas.toFixed(2)} t`,
-          fraction: `${sumaPesos} kg`,
+          label: "Kilos procesados hoy",
+          value: sumaKg / 1000,
+          percentage: `${sumaKg.toFixed(0)} kg`,
+          fraction: `${sumaLb.toFixed(0)} lb`,
         },
         {
           label: "Tiempo promedio de procesamiento",
-          value: tiempoPromedio / 3600, // escala para el indicador
+          value: tiempoPromedio / 3600,
           percentage: segundosAHHMMSS(Math.round(tiempoPromedio)),
-          fraction: procesadosHoy.length
-            ? `${procesadosHoy.length} proceso(s)`
-            : "0",
+          fraction: `${procesadosHoy.length} proceso(s)`,
         },
         {
           label: "Porcentaje de cumplimiento",
@@ -181,7 +158,7 @@ export function MetricsCards() {
     }
 
     calcular();
-    const interval = setInterval(calcular, 1000);
+    const interval = setInterval(calcular, 30000);
     return () => clearInterval(interval);
   }, []);
 

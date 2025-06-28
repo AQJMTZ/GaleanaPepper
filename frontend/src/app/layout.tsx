@@ -46,7 +46,7 @@ export const metadata: Metadata = {
     creator: "@yourname",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: "/favicon.jpg",
   },
 }
 
