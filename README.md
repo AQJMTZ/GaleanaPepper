@@ -1,76 +1,89 @@
-# Sistema Galeana Pepper
+# Galeana Pepper
 
-Sistema de gestión para el proceso de producción de chiles Galeana Pepper, desde el registro inicial hasta la salida del producto.
+Sistema de gestión para el proceso de registro, pesaje, vaciado y descarga de chile para Galeana Pepper.
 
 ## Requisitos
 
-- Node.js v16.0.0 o superior
-- pnpm (se instalará automáticamente si no está disponible)
+- [Node.js](https://nodejs.org/) (v18 o superior)
+- [pnpm](https://pnpm.io/installation) (recomendado) o npm
 
-## Instalación Rápida
+## Inicio rápido
 
-### En macOS/Linux:
+Este proyecto incluye scripts de configuración automática para facilitar la puesta en marcha.
+
+### Opción 1: Usando los scripts de configuración
+
+**En macOS o Linux:**
 
 ```bash
 # Dar permisos de ejecución al script
 chmod +x setup.sh
 
-# Ejecutar el script de instalación
+# Ejecutar el script de configuración
 ./setup.sh
 ```
 
-### En Windows:
+**En Windows:**
 
-```bash
-# Ejecutar el script de instalación
+```
 setup.bat
 ```
 
-El script verificará automáticamente los requisitos, instalará las dependencias y ejecutará la aplicación en modo desarrollo.
+### Opción 2: Usando Make
 
-## Instalación Manual
+```bash
+# Instalar dependencias y ejecutar
+make setup
+```
 
-Si prefieres instalar y ejecutar manualmente, sigue estos pasos:
+### Opción 3: Instalación manual
 
-1. Asegúrate de tener Node.js instalado (v16.0.0 o superior)
-2. Instala pnpm si no lo tienes: `npm install -g pnpm`
-3. Navega al directorio frontend: `cd frontend`
-4. Instala las dependencias: `pnpm install`
-5. Inicia el servidor de desarrollo: `pnpm dev`
+```bash
+# Entrar al directorio frontend
+cd frontend
 
-## Comandos Disponibles
+# Instalar dependencias
+pnpm install
 
-Desde el directorio `/frontend`, puedes utilizar los siguientes comandos:
+# Iniciar el servidor de desarrollo
+pnpm dev
+```
 
-- `pnpm dev`: Inicia el servidor de desarrollo
-- `pnpm build`: Compila la aplicación para producción
-- `pnpm start`: Inicia la aplicación compilada
-- `pnpm lint`: Ejecuta el linter para verificar problemas de código
-- `pnpm setup`: Reinstala las dependencias
-- `pnpm clean`: Elimina node_modules y .next, y reinstala dependencias (macOS/Linux)
-- `pnpm clean:win`: Igual que clean pero para Windows
-- `pnpm fresh-start`: Limpia la instalación y reinicia el servidor de desarrollo
+## Estructura del proyecto
 
-## Estructura del Proyecto
+```
+frontend/
+  ├── src/
+  │   ├── app/             # Páginas y rutas de la aplicación
+  │   │   ├── registro/    # Módulo de registro
+  │   │   │   ├── inicial/     # Registro inicial
+  │   │   │   ├── pesaje/      # Pesaje (primero y segundo)
+  │   │   │   ├── vaciado/     # Proceso de vaciado
+  │   │   │   └── descarga/    # Descarga final
+  │   ├── components/      # Componentes reutilizables
+  │   ├── lib/             # Utilidades y lógica de negocio
+  └── .env.development     # Variables de entorno para desarrollo
+```
 
-- `frontend/`: Aplicación Next.js
-  - `src/`: Código fuente
-    - `app/`: Rutas y páginas de la aplicación
-    - `components/`: Componentes reutilizables
-    - `lib/`: Utilidades y conexiones (como Supabase)
+## Variables de entorno
 
-## Flujo de Trabajo
+El proyecto incluye un archivo `.env.development` con credenciales para una base de datos de prueba. Estas credenciales se utilizan automáticamente cuando el proyecto se ejecuta en modo de desarrollo.
 
-El sistema implementa el siguiente flujo de trabajo:
+Si necesitas usar tus propias credenciales:
 
-1. **Registro Inicial**: Captura datos del proveedor y evaluación inicial
-2. **Primer Pesaje**: Registro del peso bruto de entrada
-3. **Vaciado**: Proceso de vaciado y tiempo en banda con evaluación de calidad
-4. **Segundo Pesaje**: Registro del peso de salida
-5. **Procesamiento**: Etapa final del producto
+1. Crea un archivo `.env.local` en el directorio `frontend/`
+2. Copia el contenido de `.env.development` y actualiza los valores
 
-## Acceso a la Aplicación
+## Flujo de trabajo
 
-Una vez que el servidor de desarrollo esté corriendo, puedes acceder a la aplicación en:
+El proceso sigue el siguiente flujo:
 
-http://localhost:3000
+1. **Registro inicial** - Creación del folio y registro de datos básicos
+2. **Primer pesaje** - Pesaje inicial del camión
+3. **Vaciado** - Proceso de vaciado con control de tiempo
+4. **Segundo pesaje** - Pesaje final del camión
+5. **Descarga** - Finalización del proceso
+
+## Soporte
+
+Para dudas o problemas, contactar al equipo de desarrollo.
