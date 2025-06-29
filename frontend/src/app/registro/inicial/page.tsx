@@ -1,3 +1,4 @@
+// Versión actualizada con selector de foto integrado y vista previa
 'use client';
 
 import { useState, useEffect } from "react";
@@ -12,38 +13,11 @@ import {
   SelectValue
 } from "@/components/Select";
 
-// Funciones de validación modulares
 const validaciones = {
   porcentaje: (valor: string): boolean => {
-    // Si está vacío, permitir (para campos en proceso de edición)
-    if (valor === '') {
-      return true;
-    }
-    
-    // Si es solo un punto decimal, permitir (para iniciar decimales)
-    if (valor === '.') {
-      return true;
-    }
-
-    // Convertir a número
+    if (valor === '' || valor === '.') return true;
     const num = parseFloat(valor);
-    
-    // Si no es un número válido, rechazar
-    if (isNaN(num)) {
-      return false;
-    }
-    
-    // Si está fuera del rango permitido, rechazar
-    if (num < 0 || num > 100) {
-      return false;
-    }
-    
-    // Permitir números decimales en proceso de escritura (ej: "12.")
-    if (valor.endsWith('.')) {
-      return true;
-    }
-    
-    // En todos los demás casos (números válidos entre 0-100), permitir
+    if (isNaN(num) || num < 0 || num > 100) return false;
     return true;
   }
 };
@@ -57,53 +31,84 @@ export default function RegistroInicialPage() {
     porcentajeChileVerde: "",
     porcentajeChileMuerto: ""
   });
-  
+
+  const [foto, setFoto] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [proveedores, setProveedores] = useState<string[]>([]);
-  
-  // Cargar proveedores al iniciar
+
   useEffect(() => {
     const cargarProveedores = async () => {
       const { data, error } = await supabase
         .from("Proveedor")
         .select("numero_economico");
-        
       if (!error && data) {
         setProveedores(data.map((p) => p.numero_economico));
       } else {
         setError("Error al cargar proveedores.");
       }
     };
-    
     cargarProveedores();
   }, []);
 
-  // Aplicar validaciones modulares para diferentes tipos de campos
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    
-    // Validar campos de porcentaje
     if (name.startsWith('porcentaje')) {
       if (validaciones.porcentaje(value)) {
         setForm((prev) => ({ ...prev, [name]: value }));
       }
     } else {
-      // Para campos que no son porcentajes, actualizar normalmente
       setForm((prev) => ({ ...prev, [name]: value }));
     }
   };
 
-  const handleValidarPorcentajes = (basura: string, verde: string, muerto: string): boolean => {
-    return validaciones.porcentaje(basura) &&
-           validaciones.porcentaje(verde) &&
-           validaciones.porcentaje(muerto);
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      setFoto(file);
+      setFotoPreview(URL.createObjectURL(file));
+    }
   };
+
+  // Fragmento para debug en subirFotoASupabase()
+const subirFotoASupabase = async (): Promise<string | null> => {
+  if (!foto) {
+    console.warn("No se seleccionó ninguna foto para subir.");
+    return null;
+  }
+
+  const extension = foto.name.split('.').pop();
+  const nombreArchivo = `producto_${Date.now()}.${extension}`;
+
+  console.log("Subiendo archivo:", nombreArchivo);
+
+  const { data: uploadData, error: uploadError } = await supabase
+    .storage
+    .from("fotos-producto")
+    .upload(nombreArchivo, foto);
+
+  if (uploadError) {
+    console.error("Error al subir la foto:", uploadError);
+    return null;
+  }
+
+  const { data: urlData } = supabase.storage.from("fotos-producto").getPublicUrl(nombreArchivo);
+
+  if (!urlData?.publicUrl) {
+    console.error("No se pudo obtener la URL pública de la foto.");
+    return null;
+  }
+
+  console.log("URL pública obtenida:", urlData.publicUrl);
+
+  return urlData.publicUrl;
+};
+
 
   const handleAction = async (action: 'aceptar' | 'rechazar') => {
     setError(null);
     setSuccess(false);
-    
     const {
       numEconomico,
       comentario,
@@ -113,14 +118,11 @@ export default function RegistroInicialPage() {
       porcentajeChileMuerto
     } = form;
 
-    // Validar que todos los campos obligatorios estén llenos
     if (!numEconomico || !tipoCamion || porcentajeBasura === "" || porcentajeChileVerde === "" || porcentajeChileMuerto === "") {
       setError("Todos los campos marcados son obligatorios.");
       return;
     }
-
-    // Validar que los porcentajes estén entre 0 y 100
-    if (!handleValidarPorcentajes(porcentajeBasura, porcentajeChileVerde, porcentajeChileMuerto)) {
+    if (!validaciones.porcentaje(porcentajeBasura) || !validaciones.porcentaje(porcentajeChileVerde) || !validaciones.porcentaje(porcentajeChileMuerto)) {
       setError("Los porcentajes deben estar entre 0 y 100.");
       return;
     }
@@ -129,7 +131,6 @@ export default function RegistroInicialPage() {
     const verde = parseFloat(porcentajeChileVerde);
     const muerto = parseFloat(porcentajeChileMuerto);
 
-    // Validar que el proveedor exista
     const { data: proveedor, error: proveedorError } = await supabase
       .from("Proveedor")
       .select("numero_economico")
@@ -141,19 +142,10 @@ export default function RegistroInicialPage() {
       return;
     }
 
-    // Generar placas aleatorias si es necesario
     const placasAleatorias = `XYZ-${Math.floor(Math.random() * 10000)}`;
-
-    // Insertar el camión sin placas explícitas (usando placas aleatorias)
     const { data: camionData, error: camionError } = await supabase
       .from("Camion")
-      .insert([
-        {
-          placas: placasAleatorias,
-          tipo_de_vehiculo: tipoCamion,
-          proveedor: numEconomico
-        }
-      ])
+      .insert([{ placas: placasAleatorias, tipo_de_vehiculo: tipoCamion, proveedor: numEconomico }])
       .select("numero_economico")
       .single();
 
@@ -163,13 +155,12 @@ export default function RegistroInicialPage() {
     }
 
     const now = new Date();
-    const fechaIngreso = now.toISOString().split("T")[0]; // yyyy-mm-dd
-    const horaIngreso = now.toTimeString().slice(0, 5); // hh:mm
-
-    // Estado según la acción
+    const fechaIngreso = now.toISOString().split("T")[0];
+    const horaIngreso = now.toTimeString().slice(0, 5);
     const estado = action === 'aceptar' ? "espera_pesaje" : "rechazado";
-    
-    // Datos del producto a insertar
+
+    const fotoUrl = await subirFotoASupabase();
+
     const productoData: any = {
       numero_economico_proveedor: numEconomico,
       numero_economico_camion: camionData.numero_economico,
@@ -179,10 +170,10 @@ export default function RegistroInicialPage() {
       comentarios: comentario,
       porcentaje_basura: basura,
       porcentaje_chile_verde: verde,
-      porcentaje_chile_muerto: muerto
+      porcentaje_chile_muerto: muerto,
+      foto: fotoUrl || null
     };
 
-    // Insertar el producto
     const { data: insertedProducto, error: productoError } = await supabase
       .from("Producto")
       .insert([productoData])
@@ -193,40 +184,21 @@ export default function RegistroInicialPage() {
       return;
     }
 
-    // Mostrar mensaje de éxito
     setSuccess(true);
-    if (action === 'aceptar') {
-      alert(`Registro exitoso. Folio: ${insertedProducto?.[0]?.folio}`);
-    } else {
-      alert("Producto rechazado correctamente.");
-    }
-    
-    // Limpiar formulario
-    setForm({
-      numEconomico: "",
-      comentario: "",
-      tipoCamion: "",
-      porcentajeBasura: "",
-      porcentajeChileVerde: "",
-      porcentajeChileMuerto: ""
-    });
-    
+    alert(action === 'aceptar' ? `Registro exitoso. Folio: ${insertedProducto?.[0]?.folio}` : "Producto rechazado.");
+    setForm({ numEconomico: "", comentario: "", tipoCamion: "", porcentajeBasura: "", porcentajeChileVerde: "", porcentajeChileMuerto: "" });
+    setFoto(null);
+    setFotoPreview(null);
     setTimeout(() => setSuccess(false), 3000);
   };
 
-  const handleAceptar = () => handleAction('aceptar');
-  const handleRechazar = () => handleAction('rechazar');
-  
   return (
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <form className="bg-black rounded-xl shadow-xl p-6 w-full max-w-md space-y-4">
         <h1 className="text-xl font-bold text-center text-white">Registro Inicial</h1>
-        
+
         {proveedores.length > 0 ? (
-          <Select 
-            value={form.numEconomico} 
-            onValueChange={(value) => setForm((prev) => ({ ...prev, numEconomico: value }))}
-          >
+          <Select value={form.numEconomico} onValueChange={(value) => setForm((prev) => ({ ...prev, numEconomico: value }))}>
             <SelectTrigger className="w-full py-1.5">
               <SelectValue placeholder="Selecciona un proveedor" />
             </SelectTrigger>
@@ -237,56 +209,14 @@ export default function RegistroInicialPage() {
             </SelectContent>
           </Select>
         ) : (
-          <Input
-            type="text"
-            name="numEconomico"
-            value={form.numEconomico}
-            onChange={handleChange}
-            placeholder="Número Económico del Proveedor"
-            required
-          />
+          <Input type="text" name="numEconomico" value={form.numEconomico} onChange={handleChange} placeholder="Número Económico del Proveedor" required />
         )}
 
-        <Input
-          type="number"
-          name="porcentajeBasura"
-          value={form.porcentajeBasura}
-          onChange={handleChange}
-          placeholder="Porcentaje de basura (%)"
-          min="0"
-          max="100"
-          step="0.01"
-          required
-        />
-        
-        <Input
-          type="number"
-          name="porcentajeChileVerde"
-          value={form.porcentajeChileVerde}
-          onChange={handleChange}
-          placeholder="Porcentaje de chile verde (%)"
-          min="0"
-          max="100"
-          step="0.01"
-          required
-        />
-        
-        <Input
-          type="number"
-          name="porcentajeChileMuerto"
-          value={form.porcentajeChileMuerto}
-          onChange={handleChange}
-          placeholder="Porcentaje de chile muerto (%)"
-          min="0"
-          max="100"
-          step="0.01"
-          required
-        />
+        <Input type="number" name="porcentajeBasura" value={form.porcentajeBasura} onChange={handleChange} placeholder="Porcentaje de basura (%)" min="0" max="100" step="0.01" required />
+        <Input type="number" name="porcentajeChileVerde" value={form.porcentajeChileVerde} onChange={handleChange} placeholder="Porcentaje de chile verde (%)" min="0" max="100" step="0.01" required />
+        <Input type="number" name="porcentajeChileMuerto" value={form.porcentajeChileMuerto} onChange={handleChange} placeholder="Porcentaje de chile muerto (%)" min="0" max="100" step="0.01" required />
 
-        <Select 
-          value={form.tipoCamion} 
-          onValueChange={(value) => setForm((prev) => ({ ...prev, tipoCamion: value }))}
-        >
+        <Select value={form.tipoCamion} onValueChange={(value) => setForm((prev) => ({ ...prev, tipoCamion: value }))}>
           <SelectTrigger className="w-full py-1.5">
             <SelectValue placeholder="Tipo de camión" />
           </SelectTrigger>
@@ -297,41 +227,21 @@ export default function RegistroInicialPage() {
           </SelectContent>
         </Select>
 
-        <textarea
-          name="comentario"
-          value={form.comentario}
-          onChange={handleChange}
-          placeholder="Comentarios de carga y/o transporte"
-          className="w-full p-2 border border-black-300 rounded-md"
-        />
+        <textarea name="comentario" value={form.comentario} onChange={handleChange} placeholder="Comentarios de carga y/o transporte" className="w-full p-2 border border-black-300 rounded-md" />
 
-        <div className="flex gap-4">
-          <Button 
-            type="button" 
-            variant="success"
-            onClick={handleAceptar} 
-            className="w-full"
-          >
-            Continuar
-          </Button>
-          <Button 
-            type="button" 
-            variant="destructive"
-            onClick={handleRechazar} 
-            className="w-full"
-          >
-            Rechazar
-          </Button>
+        <div className="space-y-2">
+          <label className="block text-white font-semibold">Agregar Foto</label>
+          <input type="file" accept="image/*" capture="environment" onChange={handleFotoChange} className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg cursor-pointer bg-gray-50" />
+          {fotoPreview && <img src={fotoPreview} alt="Vista previa" className="w-300 rounded-md mt-1" />}
         </div>
 
-        {success && (
-          <p className="text-green-600 font-medium text-center">
-            ¡Registro exitoso!
-          </p>
-        )}
-        {error && (
-          <p className="text-red-600 font-medium text-center">{error}</p>
-        )}
+        <div className="flex gap-4">
+          <Button type="button" variant="success" onClick={() => handleAction('aceptar')} className="w-full">Continuar</Button>
+          <Button type="button" variant="destructive" onClick={() => handleAction('rechazar')} className="w-full">Rechazar</Button>
+        </div>
+
+        {success && <p className="text-green-600 font-medium text-center">¡Registro exitoso!</p>}
+        {error && <p className="text-red-600 font-medium text-center">{error}</p>}
       </form>
     </main>
   );
