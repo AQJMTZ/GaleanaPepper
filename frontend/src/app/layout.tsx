@@ -46,7 +46,9 @@ export const metadata: Metadata = {
     creator: "@yourname",
   },
   icons: {
-    icon: "/favicon.jpg",
+    icon: "/favicon.ico",
+    shortcut: "/favicon.jpg",
+    apple: "/apple-icon.png", // Opcional, puedes agregar un ícono para dispositivos Apple
   },
 }
 

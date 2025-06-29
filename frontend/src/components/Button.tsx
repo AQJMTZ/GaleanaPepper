@@ -72,9 +72,35 @@ const buttonVariants = tv({
         "disabled:text-gray-400",
         "disabled:dark:text-gray-600",
       ],
+      success: [
+        // border
+        "border-transparent",
+        // text color
+        "text-white font-bold",
+        // background color
+        "bg-green-600 dark:bg-green-600",
+        // hover color
+        "hover:bg-green-700 dark:hover:bg-green-700",
+        // disabled
+        "disabled:bg-green-300 disabled:text-white",
+        "disabled:dark:bg-green-800 disabled:dark:text-green-400",
+      ],
+      warning: [
+        // border
+        "border-transparent",
+        // text color
+        "text-white font-bold",
+        // background color
+        "bg-yellow-500 dark:bg-yellow-600",
+        // hover color
+        "hover:bg-yellow-600 dark:hover:bg-yellow-700",
+        // disabled
+        "disabled:bg-yellow-300 disabled:text-white",
+        "disabled:dark:bg-yellow-800 disabled:dark:text-yellow-400",
+      ],
       destructive: [
         // text color
-        "text-white",
+        "text-white font-bold",
         // border
         "border-transparent",
         // background color
