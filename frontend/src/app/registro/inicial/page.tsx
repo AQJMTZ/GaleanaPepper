@@ -4,49 +4,6 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/Input";
 import { Button } from "@/components/Button";
 import { supabase } from "@/lib/supabaseClient";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/Select";
-
-// Funciones de validación modulares
-const validaciones = {
-  porcentaje: (valor: string): boolean => {
-    // Si está vacío, permitir (para campos en proceso de edición)
-    if (valor === '') {
-      return true;
-    }
-    
-    // Si es solo un punto decimal, permitir (para iniciar decimales)
-    if (valor === '.') {
-      return true;
-    }
-
-    // Convertir a número
-    const num = parseFloat(valor);
-    
-    // Si no es un número válido, rechazar
-    if (isNaN(num)) {
-      return false;
-    }
-    
-    // Si está fuera del rango permitido, rechazar
-    if (num < 0 || num > 100) {
-      return false;
-    }
-    
-    // Permitir números decimales en proceso de escritura (ej: "12.")
-    if (valor.endsWith('.')) {
-      return true;
-    }
-    
-    // En todos los demás casos (números válidos entre 0-100), permitir
-    return true;
-  }
-};
 
 export default function RegistroInicialPage() {
   const [form, setForm] = useState({
@@ -94,13 +51,8 @@ export default function RegistroInicialPage() {
     }
   };
 
-  const handleValidarPorcentajes = (basura: string, verde: string, muerto: string): boolean => {
-    return validaciones.porcentaje(basura) &&
-           validaciones.porcentaje(verde) &&
-           validaciones.porcentaje(muerto);
-  };
-
-  const handleAction = async (action: 'aceptar' | 'rechazar') => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setError(null);
     setSuccess(false);
     
@@ -129,7 +81,6 @@ export default function RegistroInicialPage() {
     const verde = parseFloat(porcentajeChileVerde);
     const muerto = parseFloat(porcentajeChileMuerto);
 
-    // Validar que el proveedor exista
     const { data: proveedor, error: proveedorError } = await supabase
       .from("Proveedor")
       .select("numero_economico")
@@ -141,10 +92,7 @@ export default function RegistroInicialPage() {
       return;
     }
 
-    // Generar placas aleatorias si es necesario
-    const placasAleatorias = `XYZ-${Math.floor(Math.random() * 10000)}`;
-
-    // Insertar el camión sin placas explícitas (usando placas aleatorias)
+    // Insertar el camión
     const { data: camionData, error: camionError } = await supabase
       .from("Camion")
       .insert([
@@ -163,37 +111,103 @@ export default function RegistroInicialPage() {
     }
 
     const now = new Date();
-    const fechaIngreso = now.toISOString().split("T")[0]; // yyyy-mm-dd
-    const horaIngreso = now.toTimeString().slice(0, 5); // hh:mm
+    const fechaIngreso = now.toISOString().split("T")[0];
+    const horaIngreso = now.toTimeString().slice(0, 5);
 
-    // Estado según la acción
-    const estado = action === 'aceptar' ? "espera_pesaje" : "rechazado";
-    
-    // Datos del producto a insertar
-    const productoData: any = {
-      numero_economico_proveedor: numEconomico,
-      numero_economico_camion: camionData.numero_economico,
-      fecha_ingreso: fechaIngreso,
-      hora_ingreso: horaIngreso,
-      estado,
-      comentarios: comentario,
-      porcentaje_basura: basura,
-      porcentaje_chile_verde: verde,
-      porcentaje_chile_muerto: muerto
-    };
+    const basura = parseFloat(porcentajeBasura);
+    const verde = parseFloat(porcentajeChileVerde);
+    const muerto = parseFloat(porcentajeChileMuerto);
 
-    // Insertar el producto
-    const { data: insertedProducto, error: productoError } = await supabase
-      .from("Producto")
-      .insert([productoData])
-      .select("folio");
+    const estado = "pesaje";
+
+    const { error: productoError } = await supabase.from("Producto").insert([
+      {
+        numero_economico_proveedor: numEconomico,
+        numero_economico_camion: camionData.numero_economico,
+        fecha_ingreso: fechaIngreso,
+        hora_ingreso: horaIngreso,
+        estado,
+        comentarios: comentario,
+        porcentaje_basura: basura,
+        porcentaje_chile_verde: verde,
+        porcentaje_chile_muerto: muerto
+      }
+    ]);
 
     if (productoError) {
       setError("Error al guardar producto: " + productoError.message);
       return;
     }
 
-    // Mostrar mensaje de éxito
+    setSuccess(true);
+    setForm({
+      numEconomico: "",
+      placas: "",
+      comentario: "",
+      tipoCamion: "",
+      porcentajeBasura: "",
+      porcentajeChileVerde: "",
+      porcentajeChileMuerto: ""
+    });
+    setTimeout(() => setSuccess(false), 3000);
+  };
+
+  const handleRechazar = async () => {
+    const {
+      numEconomico,
+      placas,
+      comentario,
+      tipoCamion,
+      porcentajeBasura,
+      porcentajeChileVerde,
+      porcentajeChileMuerto
+    } = form;
+
+    const { data: proveedor, error: proveedorError } = await supabase
+      .from("Proveedor")
+      .select("numero_economico")
+      .eq("numero_economico", numEconomico)
+      .maybeSingle();
+
+    if (!proveedor || proveedorError) {
+      setError("El proveedor no está registrado.");
+      return;
+    }
+
+    const now = new Date();
+    const fechaIngreso = now.toISOString().split("T")[0];
+    const horaIngreso = now.toTimeString().slice(0, 5);
+
+    const basura = parseFloat(porcentajeBasura);
+    const verde = parseFloat(porcentajeChileVerde);
+    const muerto = parseFloat(porcentajeChileMuerto);
+
+    let estado = "ingreso";
+    if (basura > 25 || verde > 35 || muerto > 15) {
+      estado = "rechazado";
+    }
+
+    // Insertar el producto
+    const { error: productoError } = await supabase.from("Producto").insert([
+      {
+        numero_economico_proveedor: numEconomico,
+        numero_economico_camion: camionData.numero_economico,
+        fecha_ingreso: fechaIngreso,
+        hora_ingreso: horaIngreso,
+        estado,
+        comentarios: comentario,
+        porcentaje_basura: basura,
+        porcentaje_chile_verde: verde,
+        porcentaje_chile_muerto: muerto
+      }
+    ]);
+
+    if (productoError) {
+      setError("Error al guardar producto: " + productoError.message);
+      return;
+    }
+
+    // Mostrar éxito y resetear formulario
     setSuccess(true);
     if (action === 'aceptar') {
       alert(`Registro exitoso. Folio: ${insertedProducto?.[0]?.folio}`);
@@ -210,7 +224,8 @@ export default function RegistroInicialPage() {
       porcentajeChileVerde: "",
       porcentajeChileMuerto: ""
     });
-    
+
+    // Quitar mensaje después de 3 segundos
     setTimeout(() => setSuccess(false), 3000);
   };
 
@@ -221,32 +236,24 @@ export default function RegistroInicialPage() {
     <main className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <form className="bg-black rounded-xl shadow-xl p-6 w-full max-w-md space-y-4">
         <h1 className="text-xl font-bold text-center text-white">Registro Inicial</h1>
-        
-        {proveedores.length > 0 ? (
-          <Select 
-            value={form.numEconomico} 
-            onValueChange={(value) => setForm((prev) => ({ ...prev, numEconomico: value }))}
-          >
-            <SelectTrigger className="w-full py-1.5">
-              <SelectValue placeholder="Selecciona un proveedor" />
-            </SelectTrigger>
-            <SelectContent align="end">
-              {proveedores.map((num) => (
-                <SelectItem key={num} value={num}>{num}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        ) : (
-          <Input
-            type="text"
-            name="numEconomico"
-            value={form.numEconomico}
-            onChange={handleChange}
-            placeholder="Número Económico del Proveedor"
-            required
-          />
-        )}
 
+        <Input
+          type="text"
+          name="numEconomico"
+          value={form.numEconomico}
+          onChange={handleChange}
+          placeholder="Número Económico del Proveedor"
+          required
+        />
+
+        <Input
+          type="text"
+          name="placas"
+          value={form.placas}
+          onChange={handleChange}
+          placeholder="Placas del camión"
+          required
+        />
         <Input
           type="number"
           name="porcentajeBasura"
@@ -282,52 +289,33 @@ export default function RegistroInicialPage() {
           step="0.01"
           required
         />
-
-        <Select 
-          value={form.tipoCamion} 
-          onValueChange={(value) => setForm((prev) => ({ ...prev, tipoCamion: value }))}
+                <select
+          name="tipoCamion"
+          value={form.tipoCamion}
+          onChange={handleChange}
+          className="w-full p-2 border border-gray-300 rounded-md"
+          required
         >
-          <SelectTrigger className="w-full py-1.5">
-            <SelectValue placeholder="Tipo de camión" />
-          </SelectTrigger>
-          <SelectContent align="end">
-            <SelectItem value="tolva">Tolva</SelectItem>
-            <SelectItem value="dompe">Dompe</SelectItem>
-            <SelectItem value="trailer">Tráiler</SelectItem>
-          </SelectContent>
-        </Select>
+          <option value="">Selecciona tipo de camión</option>
+          <option value="dompe">Dompe</option>
+          <option value="trailer">Tráiler</option>
+          <option value="tolva">Tolva</option>
+        </select>
 
         <textarea
           name="comentario"
           value={form.comentario}
           onChange={handleChange}
-          placeholder="Comentarios de carga y/o transporte"
+          placeholder="Comentarios"
           className="w-full p-2 border border-black-300 rounded-md"
         />
 
-        <div className="flex gap-4">
-          <Button 
-            type="button" 
-            variant="success"
-            onClick={handleAceptar} 
-            className="w-full"
-          >
-            Continuar
-          </Button>
-          <Button 
-            type="button" 
-            variant="destructive"
-            onClick={handleRechazar} 
-            className="w-full"
-          >
-            Rechazar
-          </Button>
-        </div>
+        <Button type="submit" className="w-full">
+          Registrar
+        </Button>
 
         {success && (
-          <p className="text-green-600 font-medium text-center">
-            ¡Registro exitoso!
-          </p>
+          <p className="text-green-600 font-medium text-center">Registro exitoso</p>
         )}
         {error && (
           <p className="text-red-600 font-medium text-center">{error}</p>
